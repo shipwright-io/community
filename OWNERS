@@ -1,0 +1,6 @@
+# The OWNERS file lists individuals who are allowed to approve pull requests by prow
+
+approvers:
+- adambkaplan
+- sbose78
+- qu1queee
