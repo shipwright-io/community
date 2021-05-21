@@ -40,6 +40,9 @@ Use the following checklist to determine where you should create an issue:
 
 If you are not sure, create an issue in this repository, and the Shipwright maintainers will route it to the correct location.
 
+If feature request is sufficiently broad or significant, the community may ask you to submit a SHIP enhancement proposal.
+Please refer to the [SHIP guidelines](/ships/README.md) to learn how to submit a SHIP proposal.
+
 ## Writing Pull Requests
 
 Contributions can be submitted by creating a pull request on Github. 
