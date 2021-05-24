@@ -15,11 +15,17 @@ Documentation is spread across the code repositories, and is consolidated in the
 
 ## How can I get involved?
 
+* Review our [Contributing Guide](CONTRIBUTING.md).
 * Join our mailing lists for [users](https://lists.shipwright.io/archives/list/shipwright-users@lists.shipwright.io/) or [contributors](https://lists.shipwright.io/archives/list/shipwright-dev@lists.shipwright.io/)
 * Talk with us on Kubernetes Slack - [#shipwright](https://kubernetes.slack.com/messages/shipwright)
 * Attend one of our community meetings - see our [public calendar](https://calendar.google.com/calendar/embed?src=shipwright-admin%40lists.shipwright.io&ctz=America%2FNew_York) for up to date information.
   * Weekly Community Update - every Monday, 9AM Eastern Time
   * Bi-weekly Backklog Grooming - every other Wednesday, 9AM Eastern Time
+
+## SHIPs
+
+Enhancements to Shipwright are discussed through the Shipwright Improvement Proposal (SHIP) process.
+If you have an idea that you want to submit to Shipwright, please read the proposal process [guidelines](/ships/README.md).
 
 ## Icons and logos
 
