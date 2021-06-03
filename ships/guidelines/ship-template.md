@@ -34,10 +34,14 @@ The YAML `title` should be lowercased and spaces/punctuation should be replaced 
 
 To get started with this template:
 
-1. **Make a copy of this template.** Copy this template into the main `proposals` directory.
+1. **Make a copy of this template.** Copy this template into the main
+   `proposals` directory, with a filename like `NNNN-neat-enhancement-idea.md`
+   where `NNNN` is an incrementing number associated with this SHIP.
 2. **Fill out the "overview" sections.** This includes the Summary and Motivation sections. These
    should be easy and explain why the community should desire this enhancement.
-3. **Create a PR.** Assign it to folks with expertise in that domain to help sponsor the process.
+3. **Create a PR.** Assign it to folks with expertise in that domain to help
+   sponsor the process. The PR title should be like "SHIP-NNNN: Neat
+   Enhancement Idea", where "NNNN" is the number associated with this SHIP.
 4. **Merge at each milestone.** Merge when the design is able to transition to a new status
    (provisional, implementable, implemented, etc.). View anything marked as `provisional` as an idea
    worth exploring in the future, but not accepted as ready to execute. Anything marked as
