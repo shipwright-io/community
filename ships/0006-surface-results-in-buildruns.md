@@ -126,7 +126,7 @@ We will have the following:
 
 | Result Name                       | Naming Convention                      | Emitted Today | Definition  | Notes                                |
 | --------------------------------: | ------------------------------------------: | -------: | ----------: | -----------------------------------: |
-| shp-source-default-commit-sha     |  `shp-source-${sourceType}-${resultName}`   | yes     |  at runtime | `${sourceType}` is `default` as is the only supported git source today |
+| shp-source-default-commit-sha     |  `shp-source-${sourceName}-${resultName}`   | yes     |  at runtime | `${sourceName}` is `default` as `spec.source` has no name. |
 
 #### Future State of Build Results for Sources
 
@@ -270,7 +270,7 @@ Should be available before release v1.0.0
 
 - `Strategy Results` could pile up, ending-up in heavy BuildRun objects. As we populate results via Tekton, the size limit of a BuildRun results is limited to the one from a Task results, which is 4096 bytes, as mentioned in the Tekton Results [documentation](https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#emitting-results).
 - `Build Results` should consider the future adoption of new types, like the `bundle` [one](https://github.com/shipwright-io/build/blob/main/docs/proposals/enable-local-source-code-support.md) or the `local-type` [one](https://github.com/shipwright-io/community/pull/11/).
-- Categorizing `Build Results` per type name might be complex, as we will consume results directly from Tekton, where there is no clear indication of their related step, as they come in the form of key/values. Therefore we need to stick to the `shp-source-${sourceType}-${resultName}` naming convention when defining results at runtime.
+- Categorizing `Build Results` per type name might be complex, as we will consume results directly from Tekton, where there is no clear indication of their related step, as they come in the form of key/values. Therefore we need to stick to the `shp-source-${sourceName}-${resultName}` naming convention when defining results at runtime.
 
 ## Drawbacks
 
