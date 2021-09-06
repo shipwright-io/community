@@ -115,7 +115,7 @@ The API changes should consider the following features:
 
 - **Ability to ensure reproducible Builds for bundle images**: Users should be able to verify if source code corresponds to a particular bundle image. To achieve this we can apply the pattern of reproducible builds, by pinning images timestamps to a particular time in the past. An example of the concept on reproducible builds is explained in [here](https://reproducible-builds.org/).
 
-- **Ability to specify particular directories that should not be bundled**: Users should be able to signalize using a `.shpignore` file, which directories to not be included in the bundle, e.g. _/vendor_. Reasonable defaults like _.github_ should be in place. Syntax should be similar/compatible with to the definitions in a `.gitignore` or `.dockerignore` file.
+- **Ability to specify particular directories that should not be bundled**: Users should be able to signalize using a `.shpignore` file, which directories not to include in the bundle, e.g. _/vendor_. Reasonable defaults like _.github_ should be in place. Syntax should be similar/compatible with the definitions in a `.gitignore` or `.dockerignore` file.
 
 ### Proposal 01: API modifications
 
