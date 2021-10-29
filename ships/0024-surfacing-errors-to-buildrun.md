@@ -16,13 +16,13 @@ approvers:
   - "@sbose78"
 creation-date: 2021-09-10
 last-updated: 2021-09-10
-status: draft
+status: implementable
 
 ---
 
 ## Release Signoff Checklist
 
-- [ ] Enhancement is `implementable`
+- [x] Enhancement is `implementable`
 - [ ] Design details are appropriately documented from clear requirements
 - [ ] Test plan is defined
 - [ ] Graduation criteria for dev preview, tech preview, GA
@@ -117,11 +117,58 @@ As a third-party application developer that uses shipwright under the hood, I wa
 
 ### Implementation Notes
 
-`tbd in the next phase of the proposal`
+
+This ship proposes two changes in the API that are implemented in `buildrun_types.go` and thus propagated in the CRD. First, the BuildRun's status gets the new field `errorDetails` that embeds the `failedAt` field:
+
+```go
+type FailureDetails struct {
+    Reason   string    `json:"reason,omitempty"`
+    Message  string    `json:"message,omitempty"`
+    Location *FailedAt `json:"location,omitempty"`
+}
+``` 
+
+Second, we keep the `failedAt` field to prevent breaking user applications. However, it should be deprecated and removed in the future due to its redundancy. Therefore, we propose adding documents that state the deprecation status and adding the news to the release notes.
+To ease deprecation and future removal, we propose refactoring `UpdateBuildRunUsingTaskRunCondition` by extracting the logic of finding the failed pod and container in a BuildRun/TaskRun.
+The new file `pkg/reconciler/buildrun/resources/failures.go` includes the extraced logic and other failure related functions.
+
+A TaskRun can emit failures using two results:
+1. shp-error-reason
+2. shp-error-message
+
+Whenever a Tekton TaskRun fails, it keeps a JSON string of all results inside each terminated step in `TaskRun.Status.Steps[i].Terminated.Message` of type `PipelineResourceResult`. Whenever we can find the two error results in a step's message field, we surface the error as `failureDetails`.
+
+So far, we have presented a mechanism to lift errors results into a BuildRun. However, no component has produced error results yet.  One source of failure is misconfiguration in the source step for git applications. For example, a user can forget to provide authentication details for a private repository. Therefore, we propose to implement error results for `cmd/git`. On top of that, we propose implementing smarter error reporting by parsing and classifying git's messages for errors in `stdout`. A third-party application would be able to provide mitigations for failed builds based on error classes in git, for example, a UI workflow to reenter basic authentication details.
+
+The following errors classes (string representation) are implemented for git:
+- `GitAuthInvalidUserOrPass`, expresses that basic authentication is not possible
+- `GitAuthInvalidKey`, expresses that ssh authentication is not possible
+- `GitRevisionNotFound` expresses that a remote branch or revision does not exist
+- `GitRepositoryNotFound`, expresses that the remote target for the git operation does not exist. It triggers when an error message is enough to determine that the remote target does not exist and is mostly derived from the Git server's messages e.g. GitLab or GitHub
+- `GitRepositoryPrivate`, is caused when a repo is not found, is private and authentication is insufficient
+- `GitBasicAuthIncomplete`, is caused when basic auth credentials either miss username or password  
+- `GitSSHAuthUnexpected`, is caused when a private key is provided for an HTTP-based remote
+- `GitSSHAuthExpectedSSH`, expresses that no private key is provided for an SSH-based remote
+- `GitError`, is the class of choice if no other class fits
+
+Each class has a helpful, static message to hint a user to a right direction to fix his build. The unknown class is generic and chosen if no other class matches. Its message is an exception since we can not determine the exact class. Thus, we propagate the git's stdout and publish it as a message.
+To prevent too-long messages, the failure message offers a setter function that cuts long error messages. Therefore, we stay within Tekton's limit for emitting results.
 
 ### Test Plan
 
-`tbd in the next phase of the proposal`
+To make sure that the new feature functions correctly, we propose a testing strategy consisting of e2e and unit tests.
+
+#### BuildRun and surfacing errors
+
+E2E tests are tricky for this feature since the error reporting is not part of it. We could implement a custom strategy for testing that implements error reporting (currently not planned). Alternatively, we can implement a proper e2e test by running a misconfigured source step. The e2e test would hit the surfacing feature and the new error reporting in our git wrapper.
+
+Unit tests set up Client, BuildRun, and TaskRun resources to test the failure extraction.
+
+#### Git error reporting
+
+- Integration tests by running the git wrapper command for all proposed error classes.
+- Unit tests for the error parser to make sure that token parsing is functioning correctly.
+
 
 ### Release Criteria
 
