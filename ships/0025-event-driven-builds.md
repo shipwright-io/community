@@ -10,10 +10,24 @@ authors:
   - "@sbose787"
   
 reviewers:
-  - TBD
+  - "@gmontero"
+  - "@adamkaplan"
+  - "@ImJasonH"
+  - "@SaschaSchwarze0"
+  - "@HeavyWombat"
   
 approvers:
-  - TBD
+  - "@adamkaplan"
+  - "@SaschaSchwarze0"
+
+
+title: webhook-validation authors:
+
+"@ImJasonH" reviewers:
+"@gmontero"
+"@zhangtbj" approvers:
+"@qu1queee"
+"@adamkaplan" creation-date: 2020-03-19 last-updated: 2020-03-19 status: provisional
  
  
 creation-date: yyyy-mm-dd
@@ -27,12 +41,12 @@ superseded-by:
   - "/docs/proposals/our-past-effort.md"
 ---
 
-# Event-driven triggering of Shipwright Builds
+# Git Event-driven triggering of Shipwright Builds
 
 
 ## Release Signoff Checklist
 
-- [ ] Enhancement is `implementable`
+- [x] Enhancement is `implementable`
 - [ ] Design details are appropriately documented from clear requirements
 - [ ] Test plan is defined
 - [ ] Graduation criteria for dev preview, tech preview, GA
