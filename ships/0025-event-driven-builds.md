@@ -21,24 +21,11 @@ approvers:
   - "@SaschaSchwarze0"
 
 
-title: webhook-validation authors:
+ 
+ 
+creation-date: 2021-11-03
+status: implementable
 
-"@ImJasonH" reviewers:
-"@gmontero"
-"@zhangtbj" approvers:
-"@qu1queee"
-"@adamkaplan" creation-date: 2020-03-19 last-updated: 2020-03-19 status: provisional
- 
- 
-creation-date: yyyy-mm-dd
-last-updated: yyyy-mm-dd
-status: provisional|implementable|implemented|rejected|withdrawn|replaced
-see-also:
-  - "/docs/proposals/this-other-neat-thing.md"  
-replaces:
-  - "/docs/proposals/that-less-than-great-idea.md"
-superseded-by:
-  - "/docs/proposals/our-past-effort.md"
 ---
 
 # Git Event-driven triggering of Shipwright Builds
@@ -65,7 +52,8 @@ Trigger the execution of an image build based on a commit/push event from a rele
 
 ## Motivation
 
-This enhancement proposal aims to API to enable users to express the intent to have their builds also triggered by events from a Git Repository.
+This enhancement proposal aims to provide an API to enable users to express the intent of having their builds triggered by events from a Git Repository.
+
 
 ### Goals
 
@@ -123,7 +111,6 @@ status:
   webhook:
     status: live
     reason: ""          # to be populated in case of error.
-    type: github
     secretRef:          # mandatory field, in-secure not an option.
       name: _user_specified_or_generated
     serviceRef:         # kubernetes service which needs to be exposed.
@@ -157,7 +144,6 @@ spec:
   webhook:
     status: live        
     reason: ""          # to be populated in case of error.
-    type: github
     secretRef:          # mandatory field, in-secure not an option.
       name: _user_specified_or_generated
     serviceRef:         # kubernetes service which needs to be exposed.
@@ -182,6 +168,8 @@ spec:
     - name: branch
       value: $(body.ref)
 ```
+
+Similar `ClusterTriggerBinding`s need to be shipped for `Gitlab` and `BitBucket`.
 
 2. A "Custom Tekton Task" controller with the following behaviour:
     * _watches_ `Tekton` `Run` resources referencing Shipwright's `Build` resources.
@@ -249,7 +237,7 @@ spec:
    
 ```
 
-
+And that's it, you may now go ahead and 
 
 ### Test Plan
 
