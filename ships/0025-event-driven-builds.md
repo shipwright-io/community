@@ -78,10 +78,10 @@ possible so that people can understand the "how" of the system. The goal here is
 real for users without getting bogged down.
 
 #### Story 1
-As a user, I would like to define a `Build` and trigger the execution of the same upon pushes to my Git Repo
+As a user, I would like to define a `Build` and trigger the execution of the same upon pushes to my Git repository.
 
 #### Story 2
-As a user, I would like to define a `Build` and the execution of the same for pushes to any branch in that Git Repo.
+As a user, I would like to define a `Build` and the execution of the same for pushes to any branch in that Git repository.
 
 #### Story 3
 As a user, I would like to configure a secure webhook URL for triggering `Builds`.
@@ -259,7 +259,7 @@ N/A
 
 1. This feature opens up the possiblility of triggering Build executions for branches which weren't explicitly specified. 
 
-This isn't a risk per se since repo committers would have the permissions needed to push a branch to the repo. Therefore,
+This isn't a risk per se since only repository committers would have the permissions needed to push branches. Therefore,
 as long as the image is tagged appropriately to indiciate that it is not built off 'main' ( or the branch specified iniially by the user in the `Build`), 
 this should not be a problem.
 
