@@ -58,7 +58,7 @@ This enhancement proposal aims to provide an API to enable users to express the 
 ### Goals
 
 * Build a technology-agostic user experience for Git-triggered build executions.
-* Add support for 'reacting' to events from Github and Gitlab repositories.
+* Add support for 'reacting' to events from Git repositories.
 
 
 
@@ -66,6 +66,7 @@ This enhancement proposal aims to provide an API to enable users to express the 
 
 * Support events from generic git servers. The implementation should be extensible to support those in a non-breaking manner.
 * Creation of the vendor-specific Ingress resources to expose the webhook URL.
+* Definition of what other forms of triggers may look like.
 
 
 ## Proposal
@@ -73,17 +74,11 @@ This enhancement proposal aims to provide an API to enable users to express the 
 
 ### User Stories [optional]
 
-Detail the things that people will be able to do if this is implemented. Include as much detail as
-possible so that people can understand the "how" of the system. The goal here is to make this feel
-real for users without getting bogged down.
 
 #### Story 1
 As a user, I would like to define a `Build` and trigger the execution of the same upon pushes to my Git repository.
 
 #### Story 2
-As a user, I would like to define a `Build` and the execution of the same for pushes to any branch in that Git repository.
-
-#### Story 3
 As a user, I would like to configure a secure webhook URL for triggering `Builds`.
 
 
@@ -97,9 +92,8 @@ provide the information on the same in the `status` of the `Build` resource.
 spec:
   ...
   ...
-  webhook:
+  trigger:
     type: github
-    imageTagPolicy: short_sha    # optional, allowed values: 'short_sha' , 'branch'. Defaults to 'branch'.
     secretRef:                   # optional, will be genereated if not specified.
       name: my-webhook-secret.  
 ```
@@ -108,13 +102,14 @@ The `.status` sub-resource would contain the information
 
 ```
 status:
-  webhook:
+  trigger:
     status: live
+    type: github
     reason: ""          # to be populated in case of error.
     secretRef:          # mandatory field, in-secure not an option.
       name: _user_specified_or_generated
     serviceRef:         # kubernetes service which needs to be exposed.
-      name: _name_of_the_recieveing_webhook_traffic  
+      name: _name_of_the_recieving_webhook_traffic  
 ```
 
 Here's what a full Build resource would look like :
@@ -133,21 +128,21 @@ spec:
     image: docker.io/${REGISTRY_ORG}/sample-nodejs:latest
     credentials:
       name: push-secret
-  webhook:
+  trigger:
     type: github
-    imageTagPolicy: short_sha    # optional, allowed values: 'short_sha' , 'branch'. Defaults to 'branch'.
     secretRef:                   # optional, will be genereated if not specified.
     name: my-webhook-secret. 
  status:
   ...
   ...
-  webhook:
+  trigger:
+    type: github
     status: live        
     reason: ""          # to be populated in case of error.
     secretRef:          # mandatory field, in-secure not an option.
-      name: _user_specified_or_generated
+      : _user_specified_or_generated
     serviceRef:         # kubernetes service which needs to be exposed.
-      name: _name_of_the_recieveing_webhook_traffic
+      name: _name_of_the_recieving_webhook_traffic
  ```
  
  #### Pre-requisities
@@ -160,13 +155,15 @@ The following items ( part of "Bill of materials" ) would need to be shipped wit
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: ClusterTriggerBinding
 metadata:
- name: github-shipwright-webhook
+ name: github-shipwright-trigger
 spec:
   params:
     - name: commit
       value: $(body.head_commit.id)
     - name: branch
       value: $(body.ref)
+    - name: url
+      value: $(body.url)
 ```
 
 Similar `ClusterTriggerBinding`s need to be shipped for `Gitlab` and `BitBucket`.
@@ -175,9 +172,22 @@ Similar `ClusterTriggerBinding`s need to be shipped for `Gitlab` and `BitBucket`
     * _watches_ `Tekton` `Run` resources referencing Shipwright's `Build` resources.
     * Expects the commit ID and branch name in the `params`.
     * Based on the above information, the controller would generate the following:
-          * A `Build` with the revision and output image tag overwritten with the above information based on the optional `.spec.webhook.imageTagPolicy`.
+          * Read the `Build` in the namespace matching the `Run` CR's `.spec.ref`
           * A `BuildRun` referencing the above `Build`.
-
+     
+      Sample `Run` CR the controller would be reacting to:
+       ```
+       
+         - apiVersion: tekton.dev/v1alpha1
+           kind: Run
+           metadata:
+             generateName: build-execution-
+           spec:
+             ref:
+               apiVersion: shipwright.io/v1alpha1
+               kind: Build
+               name: build-cr-name
+        ```
 
 
 #### Webhook endpoint creation process
@@ -195,11 +205,12 @@ Upon creation of a `Build` resource by the user, the following would occur:
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
- name: my-build-name
+ name: build-cr-name
 spec:
  params:
    - name: branch
    - name: commit
+   - name: url
  resourceTemplates:
    - apiVersion: tekton.dev/v1alpha1
      kind: Run
@@ -208,14 +219,16 @@ spec:
      spec:
        ref:
          apiVersion: shipwright.io/v1alpha1
-         kind: Build 
-         name: my-build-bame
+         kind: Build
+         name: build-cr-name
        timeout: 3000s
        params:
-         - name: branch
+         - name: revision
            value: $(tt.params.branch)
          - name: commit
            value: $(tt.params.commit)
+         - name: url
+           value: $(tt.params.url)
  ```
 
 2. The Shipwright Build Controller would create a `EventListener` under-the-hood per build. 
@@ -226,14 +239,14 @@ spec:
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
- name: name-of-the-build
+ name: build-cr-name
 spec:
  serviceAccountName: pipeline
  triggers:
    - bindings:
        - ref: github-shipwright-webhook
      template:
-       name: name-of-the-build
+       name: build-cr-name
    
 ```
 
@@ -259,12 +272,9 @@ N/A
 
 1. This feature opens up the possiblility of triggering Build executions for branches which weren't explicitly specified. 
 
-This isn't a risk per se since only repository committers would have the permissions needed to push branches. Therefore,
-as long as the image is tagged appropriately to indiciate that it is not built off 'main' ( or the branch specified iniially by the user in the `Build`), 
-this should not be a problem.
+The custom Tekton controller is responsible for ignoring any requests which would have originated from branches not explicitly 
+specified in the `Build` CR.
 
-While the enhancement could have been scoped to only deal with the branch/revision explicitly specified in the `Build` resource, 
-doing the same would have have excluded some key use cases where users push to a different branch before merging to 'main'. 
 
 2. Exposing a webhook URL enables creation of pods ( ie, processes on the node ) by actors who may not necessarily have access to the cluster.
 
@@ -276,10 +286,21 @@ This does open up an attack vector given the execution of the build is done usin
 
 ## Drawbacks
 
-1. Is this even a Shipwright concern or should this be the concern of a general-purpose CI ?
-( to be filled ) 
+1. This design wouldn't support changes to repository branches other than the one defined in the `Build` CR.
 
+As per discussion with the community, supporting the same was considered to be outside the scope of the initial 
+design of this feature. 
 
+In a future enhancement, we may consider adding something along the lines of the following
+to properly handle image tagging based on handling of webhook triggers from multiple branches.
+
+```
+  webhook:
+    type: github
+    imageTagPolicy: short_sha    # optional, allowed values: 'short_sha' , 'branch'. Defaults to 'branch'.
+    secretRef:                   # optional, will be genereated if not specified.
+    name: my-webhook-secret. 
+```
 
 
 ## Alternatives
