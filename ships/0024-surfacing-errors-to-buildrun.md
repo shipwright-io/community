@@ -16,17 +16,17 @@ approvers:
   - "@sbose78"
 creation-date: 2021-09-10
 last-updated: 2021-09-10
-status: implementable
+status: implemented
 
 ---
 
 ## Release Signoff Checklist
 
-- [x] Enhancement is `implementable`
-- [ ] Design details are appropriately documented from clear requirements
-- [ ] Test plan is defined
-- [ ] Graduation criteria for dev preview, tech preview, GA
-- [ ] User-facing documentation is created in [docs](/docs/)
+- [x] Enhancement is `implemented`
+- [x] Design details are appropriately documented from clear requirements
+- [x] Test plan is defined
+- [x] Graduation criteria for dev preview, tech preview, GA
+- [x] User-facing documentation is created in [docs](/docs/)
 
 ## Summary
 
@@ -286,4 +286,5 @@ Good naming would be key to avoid confusion specifically for the `type` property
 
 ## Implementation History
 
-tbd
+- surfacing of failure details got merged in https://github.com/shipwright-io/build/pull/930
+- git error parser and surfacing errors in the source-step got merged in https://github.com/shipwright-io/build/pull/972
