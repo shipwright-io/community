@@ -19,7 +19,7 @@ last-updated: 2021-10-06
 status: implementable
 ---
 
-# Surface Step Results in BuildRun Status
+# BuildStrategy Parameter Enhancements
 
 ## Release Signoff Checklist
 
@@ -81,7 +81,7 @@ The `type` property is new and allows either `string` or `array` with `string` b
 
 The `defaults` parameter is new and is a string array. No possibility here to reference Secret or ConfigMap values.
 
-The Build and BuildRun parameterValue will be extended to support the following:
+The Build and BuildRun paramValues will be extended to support the following:
 
 ```yaml
 spec:
