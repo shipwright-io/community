@@ -15,8 +15,8 @@ reviewers:
 approvers:
   - @adambkaplan
 creation-date: 2021-10-06
-last-updated: 2021-10-06
-status: implementable
+last-updated: 2022-02-14
+status: implemented
 ---
 
 # BuildStrategy Parameter Enhancements
@@ -27,7 +27,7 @@ status: implementable
 - [x] Design details are appropriately documented from clear requirements
 - [x] Test plan is defined
 - [x] Graduation criteria for dev preview, tech preview, GA
-- [ ] User-facing documentation is created in [docs](/docs/)
+- [x] User-facing documentation is created in [docs](/docs/)
 
 ## Open Questions [optional]
 
@@ -279,4 +279,4 @@ ConfigMaps do not contain values that necessarily need protection. Instead of us
 
 ## Implementation History
 
-There is a spike branch atm that is doing some shortcuts but is fully functional and contains an update to the BuildKit build strategy on how to use it: [sascha-spike-parameters-v2](https://github.com/SaschaSchwarze0/build/tree/sascha-spike-parameters-v2). It does not contain the support for ConfigMap references.
+The implementation was done in [SHIP 0025 Extended parameter support #975](https://github.com/shipwright-io/build/pull/975).
