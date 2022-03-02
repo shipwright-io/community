@@ -156,11 +156,80 @@ to maintain multiple resources similar to `docker build`.
 
 ### Implementation Notes
 
-tbd
+#### API Changes
+
+The proposal adds the new optional field `buildSpec` to the `BuildRun` resource specification. It also changes the
+`buildRef` field to optional, since either a `buildSpec` or a `buildRef` would be required to run a build:
+
+```go
+type BuildRunSpec struct {
+    // BuildSpec refers to an embedded build specification
+    // + optional
+    BuildSpec BuildSpec `json:"buildSpec,omitempty"`
+
+    // BuildRef refers to the Build.
+    // +optional
+    BuildRef BuildRef `json:"buildRef,omitempty"`
+
+    ...
+}
+```
+
+#### Backend
+
+The changes can be summarized in three major working items (code snippets are go-like pseudo code and simplified) :
+
+##### Refactor Build reconciler logic
+We have to extract verification logic for builds into its own functions. The buildrun reconciler should be able to import
+and reuse them. This is also a good opportunity to add some unit-test with various verification cases.
+
+##### New buildrun and embedded build verification
+As proposed above, a new set of constraints has to be enforced for the validity of buildrun specifications.
+Ideally some sort of empty intersection-set can be asserted between `spec.buildSpec` and build-overwriting properties
+for a given buildrun specification:
+
+```go
+// alternatively create struct with sets as members
+func hasIntersection(...disjunctSets) ([]br *v1alpha1.BuildRun) bool {
+    // true if any elements in disjunctSets is present within br's specs
+    // otherwise, false
+}
+```
+
+Additionally, the buildrun verification has to use the extracted set of build verification on an embedded build
+specification if present.
+
+Finally the new overall verification could be a predicate similar to:
+
+```go
+func isValidBuildrun(br *v1alpha1.BuildRun) bool {
+    return !hasIntersection(someSets)(br) && isValidBuildSpec(br.buildSpec) && ...
+}
+```
+
+##### Inject buildSpec if present
+
+So far, the buildrun reconciler uses a build reference to fetch a build and use its specification throughout the
+reconciling process. We agree with the approach, but propose to fetch a build (like we
+[currently](https://github.com/shipwright-io/build/blob/main/pkg/reconciler/buildrun/buildrun.go#L126) do)
+only if `buildRef` is present. Otherwise, there has to be an embedded build specification in `buildSpec` which we
+validate and use to create a temporary `v1alpha1.Build` instance. The instance should only exist in memory and not be an
+actual cluster resource. After that point, both branches merge in the current workflow that eventually ends up in a
+`TaskRun`.
+
+Note, we do not have to perform any cleanup operations using this approach and a minimal amount of code changes in the reconciler.
+
+#### CLI
+
+Allow the same set of flags for build creation that correspond to a build's specification to be used in buildrun
+creation. Similar to builds, we have to verify that `--buildref-name` is not used in conjunction with any build spec
+related flag such as `--output-image` (not final concept for UX, will be elaborated in a later phase of the ship lifecycle).
 
 ### Test Plan
 
-tbd
+The implementation has to be tested on a `unit`, `integration` and `e2e` level to ensure correctness.
+We have to make sure to include "negative" tests, that prevent `buildSpec` and build property overwrites such as
+`sources` to be present in the same buildrun specification.
 
 ### Release Criteria
 
