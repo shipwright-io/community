@@ -24,7 +24,7 @@ status: provisional
 
 ## Release Signoff Checklist
 
-- [ ] Enhancement is `implementable`
+- [X] Enhancement is `implementable`
 - [ ] Design details are appropriately documented from clear requirements
 - [ ] Test plan is defined
 - [ ] Graduation criteria for dev preview, tech preview, DA
@@ -84,16 +84,16 @@ metadata:
   generateName: buildpack-nodejs-buildrun-
 spec:
   buildSpec:
-      source:
-          url: https://github.com/shipwright-io/sample-nodejs
-          contextDir: source-build
-      strategy:
-          name: buildpacks-v3
-          kind: ClusterBuildStrategy
-      output:
-          image: docker.io/${REGISTRY_ORG}/sample-nodejs:latest
-          credentials:
-              name: push-secret
+    source:
+      url: https://github.com/shipwright-io/sample-nodejs
+      contextDir: source-build
+    strategy:
+      name: buildpacks-v3
+      kind: ClusterBuildStrategy
+    output:
+      image: docker.io/${REGISTRY_ORG}/sample-nodejs:latest
+      credentials:
+        name: push-secret
 ```
 
 When an embedded specification is invalid, we propose not to start a `TaskRun`. Instead, the buildrun should be set
@@ -118,24 +118,24 @@ So the following examples are invalid resource definitions:
 apiVersion: shipwright.io/v1alpha1
 kind: BuildRun
 metadata:
-    generateName: buildpack-nodejs-buildrun-
+  generateName: buildpack-nodejs-buildrun-
 spec:
-    buildRef:
-        name: buildpack-nodejs-build
-    buildSpec:
-        ...
+  buildRef:
+    name: buildpack-nodejs-build
+  buildSpec:
+    ...
 ```
 
 ```yaml
 apiVersion: shipwright.io/v1alpha1
 kind: BuildRun
 metadata:
-    generateName: buildpack-nodejs-buildrun-
+  generateName: buildpack-nodejs-buildrun-
 spec:
-    output:
-        image: my-user/nodejs-build
-    buildSpec:
-        ...
+  output:
+    image: my-user/nodejs-build
+  buildSpec:
+    ...
 ```
 
 ### User Stories
@@ -164,12 +164,14 @@ The proposal adds the new optional field `buildSpec` to the `BuildRun` resource 
 ```go
 type BuildRunSpec struct {
     // BuildSpec refers to an embedded build specification
-    // + optional
-    BuildSpec BuildSpec `json:"buildSpec,omitempty"`
-
-    // BuildRef refers to the Build.
+    //
     // +optional
-    BuildRef BuildRef `json:"buildRef,omitempty"`
+    BuildSpec *BuildSpec `json:"buildSpec,omitempty"`
+
+    // BuildRef refers to the Build
+    //
+    // +optional
+    BuildRef *BuildRef `json:"buildRef,omitempty"`
 
     ...
 }
