@@ -12,11 +12,12 @@ reviewers:
   - "@otaviof"
   - "@HeavyWombat"
   - "@imjasonh"
+  - "@alicerum"
 approvers:
   - "@sbose78"
   - "@SaschaSchwarze0"
 creation-date: 2021-08-18
-last-updated: 2021-10-19
+last-updated: 2022-04-07
 status: implementable
 see-also: []
 replaces: []
@@ -100,7 +101,7 @@ If a `BuildRun` references a volume that does not exist (either directly or in i
 #### Deprecate Implicit emptyDir Volumes
 
 Shipwright currently creates an implicit `emtpyDir` volume if one or more build steps declare a volume mount.
-This behavior should be deprecated as a prerequsite to releasing this feature.
+This behavior should be deprecated as a prerequisite to releasing this feature.
 Implicit emptyDir volumes can then be removed when this feature is released.
 
 #### Strategy Volumes API
@@ -114,7 +115,7 @@ spec:
   buildSteps:
   - name: build
     image: quay.io/my-org/my-builder:latest
-    volumeMounts:
+    volumeMounts: # Existing k8s container volume mounts
     - name: build-metadata
       mountPath: /home/build/metadata
     - name: image-cache
@@ -123,23 +124,19 @@ spec:
       mountPath: /path/for/artifact/credentials.xml
       readOnly: true
   volumes:
-  - name: build-metadata
-    description: "Build metadata"
-    optional: true
-    volumeSource:
-      type: EmptyDir # Type discriminator, this wil let us support new volume sources over time.
+  - name: build-metadata # Name of the volume. Required, must be unique
+    description: "Build metadata" # Description of the volume. Optional
+    volumeSource: # Volume source specification - inherited from k8s VolumeSource API
       emptyDir: {}
   - name: image-cache
-    description: "Container image cache"
+    description: "Container image cache" 
+    overridable: true # If true, the volume source can be changed in a Build or BuildRun. Optional
     volumeSource:
-      overridable: true # indicates the volume source can be different in a Build or BuildRun
-      type: EmptyDir
       emptyDir: {}
   - name: artifact-creds
     description: "Private artifact repository credentials"
+    overridable: true
     volumeSource:
-      overridable: true
-      type: EmptyDir
       emptyDir: {}
 ```
 
@@ -154,12 +151,10 @@ spec:
   volumes:
   - name: image-cache
     volumeSource:
-      type: PersistentVolumeClaim # When overriding, the type can be changed
       persistentVolumeClaim:
         name: pvc-image-cache
   - name: artifact-creds
     volumeSource:
-      type: Secret
       secret:
         secretName: artifact-creds # Inherited from Kubernetes VolumeSource API
 ```
@@ -202,9 +197,8 @@ spec:
   ...
   volumes:
   - name: var-lib-containers
+    overridable: true
     volumeSource:
-      overridable: true
-      type: EmptyDir
       emtpyDir: {}
 ```
 
@@ -224,7 +218,6 @@ spec:
   volumes:
   - name: var-lib-containers
     volumeSource:
-      type: PersistentVolumeClaim
       persistentVolumeClaim:
         name: shipwright-build-cache
 ```
@@ -238,7 +231,7 @@ Testing will ensure that basic scenarios are covered:
 
 1. Volume mounting Secrets and ConfigMaps
 2. Volume mounting Persistent Volumes
-3. Verifying BuildRuns succeed or fail of the `overridible` attribute is set to true/false.
+3. Verifying BuildRuns succeed or fail of the `overridable` attribute is set to true/false.
 
 ### Release Criteria
 
@@ -257,6 +250,10 @@ Security is a concern with volumes, especially if arbitrary `HostPath` volume mo
 The [Pod Security Admission plugin](https://kubernetes.io/docs/concepts/security/pod-security-admission/)
 is a means to mitigate this issue, as it allows risky volume mounts to be blocked per namespace.
 Shipwright builds should document how this admission plugin and the volumes feature interact.
+This plugin graduated to beta in Kubernetes 1.23 (enabled by default).
+
+If a TaskRun cannot create a Pod because the volume mount is denied, the `BuildRun` should report
+the failure reason in its status.
 
 ## Drawbacks
 
@@ -302,3 +299,4 @@ No new infrastructure.
 
 2021-08-18: Provisional SHIP proposal
 2021-10-19: Updated to implementable
+2022-04-07: Remove the `optional` and `type` fields in the API
