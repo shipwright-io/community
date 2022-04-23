@@ -38,7 +38,7 @@ different mirrors in a per namespace basis (each namespace holds the mirror regi
 
 ## Summary
 
-This enhancement proposal suggests the introduction a per namespace mirror registry configuration,
+This enhancement proposal suggests the introduction of a per namespace mirror registry configuration,
 without loosing the feature of having a global mirror configuration.
 
 ## Motivation
