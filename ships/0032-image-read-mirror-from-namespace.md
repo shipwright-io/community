@@ -59,7 +59,7 @@ with a single mirror registry multi tenancy becomes more complex to be implement
 ## Proposal
 
 The Secret will be named `shipwright-mirror-registry-config`, it can exist in any namespace and
-it can containg the following properties:
+it can contain the following properties:
 
 | Name       | Description                                                                        |
 | -----------| ---------------------------------------------------------------------------------- |
