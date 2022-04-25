@@ -38,8 +38,9 @@ different mirrors in a per namespace basis (each namespace holds the mirror regi
 
 ## Summary
 
-This enhancement proposal suggests the introduction of a per namespace mirror registry configuration,
-without loosing the feature of having a global mirror configuration.
+This enhancement proposal suggests the introduction of a per namespace mirror registry config,
+without loosing the feature of having a global mirror configuration. The global mirror registry
+configuration becomes optional and is used if no credentials were found in the target namespace.
 
 ## Motivation
 
@@ -58,21 +59,31 @@ with a single mirror registry multi tenancy becomes more complex to be implement
 
 ## Proposal
 
-The Secret will be named `shipwright-mirror-registry-config`, it can exist in any namespace and
-it can contain the following properties:
+The Secret will be named `mirror-registry-config`, it can exist in any namespace and it can
+contain the following properties:
 
-| Name       | Description                                                                        |
-| -----------| ---------------------------------------------------------------------------------- |
-| address    | The mirror registry URL                                                            |
-| username   | Username Shipwright Images should use when accessing the mirror registry           |
-| password   | The password to be used by Shipwright Images                                       |
-| token      | The auth token to be used by Shipwright Images (optional)                          |
-| insecure   | Allows Shipwright Images to access insecure registry if set to "true" (string)     |
+| Name       | Description                                                                         |
+| -----------| ----------------------------------------------------------------------------------- |
+| address    | The mirror registry URL                                                             |
+| repository | The repository, inside the registry, used to store images for a namespace (optional)|
+| username   | Username Shipwright Images should use when accessing the mirror registry            |
+| password   | The password to be used by Shipwright Images                                        |
+| token      | The auth token to be used by Shipwright Images (optional)                           |
+| insecure   | Allows Shipwright Images to access insecure registry if set to "true" (string)      |
 
 If such a Secret exists in a given namespace users can mirror images inside it. If the Secret does
 not exist the operator should attempt to read it from the operator namespace allowing the current
 setup to keep working. In other words: the operator has a global mirror configuration living in
-its own namespace but uses a per namespace secret to overwrite the global setup.
+its own namespace but uses a per namespace secret to overwrite the global setup. If neither local
+and global configurations are present the operator should properly report this situation in the
+ImageImport object status.
+
+The `repository` configuration is used in conjunction with the `address` to compose an unique
+repository address. For example: if `address` points to `my.registry.io` and `repository` is set
+to `myapp` all images inside the namespace will be mirrored into `my.registry.io/myapp`. If the
+`repository` configuration is empty the `namespace` name is used instead, for example an image
+living in the `my-namespace` namespace will be mirrored into `registry.address.io/my-namespace`
+repository.
 
 ### User Stories [optional]
 
