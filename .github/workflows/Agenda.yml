@@ -15,7 +15,7 @@ jobs:
         with:
           assignees: ""
           labels: "community, meeting"
-          title: " `r format(Sys.Date(), "%d %B %Y")` Community Meeting !"
+          title: " Community Meeting !"
           
           body: |
             ### Agenda
