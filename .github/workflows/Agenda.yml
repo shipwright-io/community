@@ -10,12 +10,16 @@ jobs:
     permissions:
       issues: write
     steps:
+      - name: Today's Date
+        run: echo "TODAY=$(date '+%d %B %Y')" >> $GITHUB_ENV
       - name: Create team sync issue
-        uses: imjohnbo/issue-bot@3daae12aa54d38685d7ff8459fc8a2aee8cea98b
+        uses: imjohnbo/issue-bot@v3
+        
         with:
           assignees: ""
           labels: "community, meeting"
-          title: " Community Meeting !"
+          
+          title: " ${{env.TODAY}} Community Meeting !"
           
           body: |
             ### Agenda
