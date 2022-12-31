@@ -1,7 +1,7 @@
 name: Weekly Team Sync
 on:
   schedule:
-    - cron: 2 * * * *
+    - cron: 00 17 * * 1
     
 jobs:
   create_issue:
@@ -11,7 +11,7 @@ jobs:
       issues: write
     steps:
       - name: Today's Date
-        run: echo "TODAY=$(date '+%d %B %Y')" >> $GITHUB_ENV
+        run: echo "TODAY=$(date '+%B %d, %Y')" >> $GITHUB_ENV
       - name: Create team sync issue
         uses: imjohnbo/issue-bot@v3
         
@@ -19,7 +19,7 @@ jobs:
           assignees: ""
           labels: "community, meeting"
           
-          title: " ${{env.TODAY}} Community Meeting !"
+          title: " ${{env.TODAY}} Community Meeting "
           
           body: |
             ### Agenda
@@ -28,7 +28,7 @@ jobs:
             - [ ] Discussion points
             - Please add a topic in this thread and add a link to the GitHub issue associated with the topic.
             - Please make sure you give folks enough time to review/discuss the topic offline on GitHub before coming into the meeting
-            - (optional) Paste the image of an animal smile_cat
+            - (optional) Paste the image of an animal 😸
                     
             ### Discussion Points
             Add things to discuss below
