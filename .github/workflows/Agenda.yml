@@ -19,7 +19,7 @@ jobs:
           assignees: ""
           labels: "community, meeting"
           
-          title: " ${{env.TODAY}} Community Meeting "
+          title: "${{env.TODAY}} Community Meeting"
           
           body: |
             ### Agenda
