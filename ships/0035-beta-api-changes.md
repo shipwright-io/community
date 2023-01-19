@@ -18,7 +18,7 @@ approvers:
   - "@SaschaSchwarze0"
   - "@adambkaplan"
 creation-date: 2022-07-09
-last-updated: 2022-07-09
+last-updated: 2023-01-19
 status: implementable
 ---
 
@@ -42,7 +42,7 @@ Propose a path to release Shipwright Beta API. Achieving a Beta API will provide
 
 1. The majority of the Shipwright Alpha API did not change over time. Part of the current Alpha API is considered mature enough for graduating to Beta.
 
-2. The Shipwright API got many novel ideas over time, supporting different use cases. These features were implemented as part of the Alpha API, but the desired state was not reach. Planning for Beta API puts into triage these features and their potential deprecation.
+2. The Shipwright API got many novel ideas over time, supporting different use cases. These features were implemented as part of the Alpha API, but the desired state was not reached. Planning for Beta API puts into triage these features and their potential deprecation.
 
 3. The Shipwright API was created with some assumptions in mind, over time new features force us to rethink on better states of the API.
 
@@ -54,21 +54,20 @@ Propose a path to release Shipwright Beta API. Achieving a Beta API will provide
 
 3. Define supported use cases for Beta API.
 
-### Non-Goals
-
-1. Document migration strategies of API conventions or object definitions from Alpha to Beta.
+4. Document migration strategies of API conventions or object definitions from Alpha to Beta.
 
 ## Proposal
 
-We follow the Kubernetes API [versioning](https://kubernetes.io/docs/reference/using-api/#api-versioning). As documented by Kubernetes, we stick to the same levels (_Alpha, Beta or Stable_), depending on the levels of stability and support.
+This proposal introduces a Beta API for Shipwright, with version `v1beta1` following the Kubernetes API [versioning scheme](https://kubernetes.io/docs/reference/using-api/#api-versioning). The current API (`v1alpha1`) will be deprecated and eventually removed.
+
 
 ### Deprecation Policy
 
-For the policy of Beta, we rely also on the Kubernetes Deprecation [policies](https://kubernetes.io/docs/reference/using-api/deprecation-policy/), which translates to the following four rules:
+In the spirit of the Kubernetes Deprecation [policies](https://kubernetes.io/docs/reference/using-api/deprecation-policy/), the beta API will come with the following support guarantees:
 
-1. _API elements may only be removed by incrementing the version of the API group._
-2. _API objects must be able to round-trip between API versions in a given release without information loss, with the exception of whole REST resources that do not exist in some versions._
-3. _An API version in a given track may not be deprecated in favor of a less stable API version._
+1. _No breaking changes, such as removal of fields, will be introduced without introducing a new beta API version (ex - `v1beta2`)._
+2. _Beta API versions may be deprecated, however they will continue to be served and supported for a period of 9 months after the deprecation is announced._
+3. _The beta API will never be deprecated in favor of an `alpha` API (ex - `v1alpha2`)._
 4. _Minimum API lifetime is determined by the API stability level_
 
 Related to 4), in this document we propose that for Beta API versions, we provide coverage after deprecation for **9** months. We do not encourage to be based on releases quantity, per the faster cadence we have compared to Kubernetes.
@@ -94,8 +93,8 @@ Related to 4), in this document we propose that for Beta API versions, we provid
 6. In the `BuildRun` resource, remove the support for auto-generating a service account.
 
 ### Supported Use Cases
-
 ### Implementation Details/Notes/Constraints [optional]
+
 
 ### Risks and Mitigations
 
