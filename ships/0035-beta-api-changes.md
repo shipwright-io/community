@@ -10,15 +10,12 @@ authors:
   - "@qu1queee"
 reviewers:
   - "@SaschaSchwarze0"
-  - "@coreydaley"
-  - "@otaviof"
-  - "@dalbar"
   - "@adambkaplan"
 approvers:
   - "@SaschaSchwarze0"
   - "@adambkaplan"
 creation-date: 2022-07-09
-last-updated: 2023-01-19
+last-updated: 2023-03-10
 status: implementable
 ---
 
@@ -28,7 +25,7 @@ status: implementable
 
 - [x] Enhancement is `implementable`
 - [x] Design details are appropriately documented from clear requirements
-- [ ] Test plan is defined
+- [x] Test plan is defined
 - [x] Graduation criteria for dev preview, tech preview, GA
 - [ ] User-facing documentation is created in [docs](/docs/)
 
@@ -59,6 +56,8 @@ Propose a path to release Shipwright Beta API. Achieving a Beta API will provide
 ## Proposal
 
 This proposal introduces a Beta API for Shipwright, with version `v1beta1` following the Kubernetes API [versioning scheme](https://kubernetes.io/docs/reference/using-api/#api-versioning). The current API (`v1alpha1`) will be deprecated and eventually removed.
+
+We will define the `v1alpha1` API version as the stored version in the next releases(_v0.12.0_). One release after(_v0.14.0_) we will switch the stored version to `v1beta1`.
 
 
 ### Deprecation Policy
@@ -93,26 +92,67 @@ Related to 4), in this document we propose that for Beta API versions, we provid
 6. In the `BuildRun` resource, remove the support for auto-generating a service account.
 
 ### Supported Use Cases
+
+#### Story 1
+
+As a user, I can create a Shipwright _v1beta1_ CRD. Shipwright should be able to convert this into a _v1alpha1_ CRD and stored that version in ETCD.
+
+#### Story 2
+
+As an external Kubernetes controller, I should be able to operate on Shipwright _v1beta1_ or _v1alpha1_ CRD's, independently of the API stored version.
+
 ### Implementation Details/Notes/Constraints [optional]
+
+We rely on the controller-runtime conversion model known as "hub and spoke". In this model, we will mark one version as the "hub", and all other versions just define conversion to and from the hub. In the scenario of needing to convert between two non-hub versions, we first convert to the hub version, and from there to the desired version:
+
+
+![Controller-runtime hub and spoke model](assets/0006-hub-and-spoke-model.png)
+
+For requests to a particular version that is not the API stored version in ETCD, we will require a webhook. The webhook  will be call out by the API server to do the conversion. For the webhook, we will rely on the [webhook](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/webhook/conversion) package from controller-runtime. The [conversion](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/conversion) package will provide us the interface definitions that an API type must implement to be supported by the generic conversion webhook from controller-runtime.
+
+From the above, the implementation can be categorize in two areas:
+
+
+#### Webhook Implementation
+
+1. We need to implement a webhook, following the [webhook](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/webhook/conversion) controller-runtime package. This webhook should assume that the related API types implement the conversion interface definitions.
+
+#### API types and conversion functions
+
+1. Decide on the storage version. Here we propose to make _v1alpha1_ the storage version. This makes the _v1alpha1_ the "hub".
+2. Add the _v1beta1_ API types, under [apis/build](https://github.com/shipwright-io/build/tree/main/pkg/apis/build)
+3. Introduce `<resource_name>_conversion.go` files next to the types, here we will define functions for conversion. This applies to all API versions.
+4. For the hub, we will introduce under the `*_conversion.go` file a `Hub()` function. This will be done for the _v1alpha1_ API version.
+5. For the spokes, we introduce under the `*_conversion.go` a `ConvertTo()` and `ConvertFrom()` function. This will be done for the _v1beta1_ API version.
+6. Populate the conversion functions, to adhere to the API changes and deprecations mentioned above.
+6. Modify the CRDs, to explicitly state which API version must be stored and which not.
+7. Regenerate all artifacts, from generated code to CRDS based on the new API types.
+8. Ensure that helper scripts for autogenerating are aware of the _v1beta1_ type.
+
+
+Note: We do not need to modify shipwright business logic or test cases, as they currently use the _v1alpha1_ API version. However, once the _hub_ API version is modified, we will need to modify this accordingly.
 
 
 ### Risks and Mitigations
+
+None. Users should be able to use both API versions without any inconvenience.
 
 ## Design Details
 
 ### Test Plan
 
+- Not required. We do not modify for the time being any test case.
+- We need implement unit-tests to the `*_conversion.go`.
+
 ### Graduation Criteria
 
-
+This will be part of the Shipwright/Build v0.12.0 release-
 
 ### Upgrade / Downgrade Strategy
 
-
-### Version Skew Strategy
+Not applicable.
 
 ## Implementation History
 
-## Drawbacks
-
+Not applicable.
 
