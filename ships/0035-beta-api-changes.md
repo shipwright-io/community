@@ -76,7 +76,7 @@ Related to 4), in this document we propose that for Beta API versions, we provid
 1. In all resources, introduce a convention for objects with an array, where each element contains the `name` key. An existing example is `.spec.volumes`.
 2. In the `Build` resource, replace `.spec.source.credentials` and `.spec.output.credentials` with a single field(_key_). This will become `.spec.source.cloneSecret` and `.spec.output.pushSecret` and will reference a secret name in the current namespace.
 3. In the `BuildStrategy` resource(_namespace and cluster scope_), replace `.spec.buildSteps` in favor of `steps`. The same applies to the `BuildStep` Go type.
-4. In the `BuildStrategy` resource(_namespace and cluster scope_), replace the `.spec.buildSteps[]`items with customize fields, instead of the whole `corev1.Container` Go type.
+4. In the `BuildStrategy` resource(_namespace and cluster scope_), replace the `.spec.buildSteps[]` items with a custom type, instead of the whole `corev1.Container` Go type.
 5. In the `Build` resource, replace the `build.build.dev/build-run-deletion` annotation in favor of `.spec.retention.atBuildDeletion`.
 6. In the `BuildRun` resource, rename `.status.latestTaskRunRef` to `.status.taskRunName`.
 7. In the `BuildRun` resource, consolidate `.spec.buildRef.name` and `.spec.buildSpec` into `.spec.build.name` and `.spec.build.spec`.
@@ -95,7 +95,7 @@ Related to 4), in this document we propose that for Beta API versions, we provid
 
 #### Story 1
 
-As a user, I can create a Shipwright _v1beta1_ CRD. Shipwright should be able to convert this into a _v1alpha1_ CRD and stored that version in ETCD.
+As a user, I can create a Shipwright _v1beta1_ custom resource. Shipwright should be able to convert this into a _v1alpha1_ custom resource and stored that version.
 
 #### Story 2
 
@@ -108,7 +108,7 @@ We rely on the controller-runtime conversion model known as "hub and spoke". In 
 
 ![Controller-runtime hub and spoke model](assets/0006-hub-and-spoke-model.png)
 
-For requests to a particular version that is not the API stored version in ETCD, we will require a webhook. The webhook  will be call out by the API server to do the conversion. For the webhook, we will rely on the [webhook](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/webhook/conversion) package from controller-runtime. The [conversion](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/conversion) package will provide us the interface definitions that an API type must implement to be supported by the generic conversion webhook from controller-runtime.
+For requests to a particular version that is not the API stored version in ETCD, we will require a webhook. The webhook will be called by the API server to do the conversion. For the webhook, we will rely on the [webhook](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/webhook/conversion) package from controller-runtime. The [conversion](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/conversion) package will provide us the interface definitions that an API type must implement to be supported by the generic conversion webhook from controller-runtime.
 
 From the above, the implementation can be categorize in two areas:
 
@@ -126,7 +126,7 @@ From the above, the implementation can be categorize in two areas:
 5. For the spokes, we introduce under the `*_conversion.go` a `ConvertTo()` and `ConvertFrom()` function. This will be done for the _v1beta1_ API version.
 6. Populate the conversion functions, to adhere to the API changes and deprecations mentioned above.
 6. Modify the CRDs, to explicitly state which API version must be stored and which not.
-7. Regenerate all artifacts, from generated code to CRDS based on the new API types.
+7. Regenerate all artifacts, from generated code to CRDs based on the new API types.
 8. Ensure that helper scripts for autogenerating are aware of the _v1beta1_ type.
 
 
