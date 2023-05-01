@@ -74,15 +74,19 @@ Related to 4), in this document we propose that for Beta API versions, we provid
 ### API Changes
 
 1. In all resources, introduce a convention for objects with an array, where each element contains the `name` key. An existing example is `.spec.volumes`.
-2. In the `Build` resource, replace `.spec.source.credentials` and `.spec.output.credentials` with a single field(_key_). This will become `.spec.source.cloneSecret` and `.spec.output.pushSecret` and will reference a secret name in the current namespace.
-3. In the `BuildStrategy` resource(_namespace and cluster scope_), replace `.spec.buildSteps` in favor of `steps`. The same applies to the `BuildStep` Go type.
-4. In the `BuildStrategy` resource(_namespace and cluster scope_), replace the `.spec.buildSteps[]` items with a custom type, instead of the whole `corev1.Container` Go type.
-5. In the `Build` resource, replace the `build.build.dev/build-run-deletion` annotation in favor of `.spec.retention.atBuildDeletion`.
-6. In the `BuildRun` resource, rename `.status.latestTaskRunRef` to `.status.taskRunName`.
-7. In the `BuildRun` resource, consolidate `.spec.buildRef.name` and `.spec.buildSpec` into `.spec.build.name` and `.spec.build.spec`.
-8. Use `type discriminators` if an API object has some form of implied polymorphism. For example, source types or volume sources.
+2. In the `Build` resource, allow multiple types within `.spec.source`. The types will be `.spec.source.git`, `.spec.source.local` and `.spec.source.ociartifact`. 
+3. In the `Build` resource, replace `.spec.source.credentials` in favor of a simple field(_key_) per Build type that highlights the need for such secret. For example, for the type `Git`, the field key name will be `.spec.source.git.cloneSecret`. 
+4. In the `Build` resource, replace `.spec.output.credentials` with a single field(_key_). This will become `.spec.output.pushSecret` and will reference a secret name in the current namespace.
+5. In the `BuildStrategy` resource(_namespace and cluster scope_), replace `.spec.buildSteps` in favor of `steps`. The same applies to the `BuildStep` Go type.
+6. In the `BuildStrategy` resource(_namespace and cluster scope_), replace the `.spec.buildSteps[]` items with a custom type, instead of the whole `corev1.Container` Go type.
+7. In the `Build` resource, replace the `build.shipwright.io/build-run-deletion` annotation in favor of `.spec.retention.atBuildDeletion`.
+8. In the `BuildRun` resource, rename `.status.latestTaskRunRef` to `.status.taskRunName`.
+9. In the `BuildRun` resource, consolidate `.spec.buildRef.name` and `.spec.buildSpec` into `.spec.build.name` and `.spec.build.spec`.
+10. Use `type discriminators` if an API object has some form of implied polymorphism. For example, source types or volume sources.
 
 ### Deprecation
+
+The deprecation of the API fields in the below list applies to `v1alpha1`. Deprecated fields are removed only in `v1beta1`.
 
 1. In the `Build` resource, deprecate `.spec.sources`. We only allow `.spec.source`.
 2. In the `Build` resource, deprecate `.spec.dockerfile`.
@@ -99,7 +103,7 @@ As a user, I can create a Shipwright _v1beta1_ custom resource. Shipwright shoul
 
 #### Story 2
 
-As an external Kubernetes controller, I should be able to operate on Shipwright _v1beta1_ or _v1alpha1_ CRD's, independently of the API stored version.
+As an external Kubernetes controller, I should be able to operate on Shipwright _v1beta1_ or _v1alpha1_ custom resources, independently of the API stored version.
 
 ### Implementation Details/Notes/Constraints [optional]
 
@@ -115,7 +119,7 @@ From the above, the implementation can be categorize in two areas:
 
 #### Webhook Implementation
 
-1. We need to implement a webhook, following the [webhook](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/webhook/conversion) controller-runtime package. This webhook should assume that the related API types implement the conversion interface definitions.
+1. We need to implement a webhook, following the [webhook](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/webhook/conversion) controller-runtime package. This webhook should assume that the related API types implement the conversion interface definitions. For the implementation, we propose to define the webhook as an additional deployment. This deployment could serve in the future additional endpoints for other types of admission requests.
 
 #### API types and conversion functions
 
