@@ -15,7 +15,7 @@ approvers:
   - "@adambkaplan"
   - "@qu1queee"
 creation-date: 2023-03-24
-last-updated: 2023-04-17
+last-updated: 2023-05-03
 status: implementable
 ---
 
@@ -57,7 +57,7 @@ To improve this, I am suggesting to change our logic to run the supporting steps
 
 ### Goals
 
-- Run all Shipwright-injected steps as the same user that is used by the build strategy.
+- Run all Shipwright-managed steps as the same user that is used by the build strategy.
 - Remove all prepare steps from sample build strategies. This implies that we will have many build strategies that then fully run as non-root user.
 - Change the Paketo sample build strategy to Jammy to prove that non-root strategies that run as a non-root user that is not 1000 are functional.
 
@@ -77,23 +77,37 @@ As a Shipwright Build Strategy author, I want to read about recommendations to s
 
 ## Proposal
 
+### API changes
+
+The Build Strategy API is extended with a top-level `securityContext` inside the `spec`. It can be used to define the `runAsUser` and `runAsGroup`. If present, those settings override the `runAsUser` and `runAsGroup` form the container templates in the Shipwright configuration. They are also the default for the strategy steps. Strategy steps can still overwrite those two fields in their step-level `securityContext`.
+
+In the following example, all Shipwright-managed steps will run as user 1001 and group 1000 while the single build strategy step will run as user 1001 and group 0.
+
+```yaml
+apiVersion: shipwright.io/v1alpha1
+kind: ClusterBuildStrategy
+metadata:
+  name: buildpacks-v3
+spec:
+  securityContext:
+    runAsUser: 1001
+    runAsGroup: 1000
+  buildSteps:
+  - name: build
+    securityContext:
+      runAsGroup: 0
+    ...
+```
+
 ### Base image changes
 
-Container images define which users and groups exist in the container by specifying the content of `/etc/passwd` and `/etc/group`. Though, it is generally possible to run a container with as a user or group that is not included in the container image. We are making use of this.
+Container images define which users and groups exist in the container by specifying the content of `/etc/passwd` and `/etc/group`. Though, it is generally possible to run a container with as a user or group that is not included in the container image.
 
 One change that we must make, is to introduce a common world-writable home directory that we call `/shared-home`. We will reference this in the Shipwright configuration's container template.
 
 Unfortunately, binaries may rely on an entry in the `/etc/passwd` and `/etc/group` files to be present to properly work. For the binaries that we run in supporting steps, this is the case for `ssh` which we need in the Git step when cloning using the SSH protocol. [SSH requires an entry and fails if it is not present.](https://github.com/openssh/openssh-portable/blob/V_9_3_P1/ssh.c#L671-L676)
 
-We therefore must ensure that those files contain proper information. For that, we have two options:
-
-#### Option 1: Writable files
-
-We will change the base image for the supporting steps to contain empty `/etc/passwd` and `/etc/group` files that are writable for everybody. The Git step will register itself before running any `ssh` command.
-
-To mitigate the security problem that this opens (the user can exec into that container, write to `/etc/passwd` and run `su` to become root / user 0), we will change the default configuration of our supporting steps to not allow privilege escalation and to drop all capabilities. We actually should have configured them like this all the time already to give them no unnecessary privileges.
-
-#### Option 2: Mounted files
+We therefore must ensure that those files contain proper information.
 
 We will change the base image to contain `/etc/passwd` and `/etc/group` files with the content that applies to the default Shipwright configuration. That will be for `/etc/passwd`:
 
@@ -107,7 +121,11 @@ And for `/etc/group`:
 shp:x:1000
 ```
 
-At runtime, the BuildRun reconcile will configure the TaskRun to have these annotations in case the build strategy runs as user 1010 and group 1020:
+### BuildRun reconciler changes
+
+The BuildRun reconciler is changed to check the strategy-level `securityContext`. If it is defined, then their `runAsUser` and `runAsGroup` override those settings from the container templates of Shipwright-managed steps in the configuration. They are also defaults for the strategy steps' securityContext.
+
+If the strategy-level `securityContext` is defined, then the reconciler will setup the `/etc/passwd` and `/etc/group` files to match this configuration. The following annotations are added to the TaskRun (assuming a build strategy that runs as user 1010 and group 1020):
 
 ```yaml
 metadata:
@@ -116,7 +134,7 @@ metadata:
     buildrun.shipwright.io/security-context-passwd: shp:x:1010:1020:shp:/shared-home:/sbin/nologin
 ```
 
-Those annotations are used in a [downward API volume](https://kubernetes.io/docs/concepts/storage/volumes/#downwardapi):
+Tekton will automatically propagate these annotations to the Pod. There, they are used in a [downward API volume](https://kubernetes.io/docs/concepts/storage/volumes/#downwardapi):
 
 ```yaml
 spec:
@@ -133,7 +151,7 @@ spec:
               fieldPath: ".metadata.annotations['buildrun.shipwright.io/security-context-passwd']"
 ```
 
-Shipwright-injected steps will mount the `/etc/group` and `/etc/passwd` files through these volume mounts:
+Shipwright-managed steps will mount the `/etc/group` and `/etc/passwd` files through these volume mounts:
 
 ```yaml
 spec:
@@ -148,23 +166,17 @@ spec:
           subPath: passwd
 ```
 
-Through this mechanism, the user in the container cannot change the `/etc/passwd` file and has no chance to switch to a user. We should still apply the other security context changes (no allowed privilege escalation and all capabilities dropped) like for the first option.
+Through this mechanism, the user in the container cannot change the `/etc/group` and `/etc/passwd` files, and has no chance to switch to a user.
 
-Downward APIs in their nature mean a dynamic file content as a change to the referenced field, in our case the annotations, would update the mounted files. For this specific setup, this will not happen as [Kubernetes documents the following](https://kubernetes.io/docs/concepts/storage/volumes/#downwardapi):
+Downward APIs in their nature mean a dynamic file content as a change to the referenced field, in our case the annotations, would update the mounted files. For our specific setup, this will not happen as [Kubernetes documents the following](https://kubernetes.io/docs/concepts/storage/volumes/#downwardapi):
 
 > **Note**: A container using the downward API as a subPath volume mount does not receive updates when field values change.
 
-This can be considered a current limitation in Kubernetes and could change in the future. Even when this is lifted, we will still be safe because a Kubernetes user who is allowed to update the pod, can only change the content of `/etc/passwd` but not the `runAsUser` and `runAsGroup` of the container. The reduced container privileges will prevent any user change.
-
-### BuildRun reconciler changes
-
-The BuildRun reconciler is changed to check the steps of the build strategy. If all of the included steps define a runAsUser and runAsGroup that is always the same, then the Shipwright-added steps will be changed to run as this user and/or group.
-
-Otherwise, the runAsUser and runAsGroup that are defined in the configuration's container templates are used.
+This can be considered a current limitation in Kubernetes and could change in the future. Even when this is lifted, we will still be safe because a Kubernetes user who is allowed to update the pod, can only change the content of `/etc/passwd` but not the `runAsUser` and `runAsGroup` of the container as we will also reduce the default configuration of our supporting steps to not allow privilege escalation and to drop all capabilities (`SETGID` and `SETUID` would be required to switch the user). We actually should have configured them like this all the time already to give them no unnecessary privileges.
 
 ### Sample updates
 
-The prepare step of all build strategies is removed. The Paketo build strategy is updated to use the Jammy builder and run as user 1001.
+The prepare step of all build strategies is removed. The Paketo build strategy is updated to use the Jammy builder and run as user 1001. The strategy-level `securityContext` is introduced in those strategies that do not run as user/group 1000, such as Paketo and Kaniko.
 
 ### Documentation updates
 
@@ -180,7 +192,7 @@ The e2e tests that depend on a Git secret have to succeed locally as they do not
 
 ## Risks and Mitigations
 
-- Risk: we might break existing build strategies that run steps as a non-root non-1000 user and were able to work with source code cloned as 1000 without the prepare step hack. I don't think that this is realistically the case. But, it can't be ruled out completely. The release notes and release blog post should highlight the change and link to the build strategy documentation change.
+None
 
 ## Drawbacks
 
@@ -188,10 +200,11 @@ The e2e tests that depend on a Git secret have to succeed locally as they do not
 
 - Instead of setting the `securityContext` of all the supporting steps to the same value as the build strategy steps, we could also set the Pod's `securityContext` (through the [TaskRun's pod template](https://tekton.dev/docs/pipelines/taskruns/#specifying-a-pod-template)), and clear the `runAsUser` and `runAsGroup` on the steps. The resulting behavior would mostly be the same beside that the Pod's `securityContext` would also apply to Tekton's init containers. As we so far do not set any pod template and do not require to run the init containers as the same user, we will go with the step settings for now.
 - The whole feature could be implemented as a opt-in feature through a configuration setting. This is not done because all sample build strategies will be changed. Even the existing build strategies would continue to behave as today because they do NOT have a common `runAsUser` or `runAsGroup` configuration on their steps.
-- Instead of running all build strategy steps as the same user, we can also make use of supplemental groups: we collect the runAsGroups of all build strategy, and shipwright-injected steps, and configure those as supplemental groups on the Pod's security context. In addition, we change all our source steps to make the files not only user- but also group-writable. As a result, all strategy steps will have write access to all source files due to group ownership. This works for most cases, but not for build strategies that try to run operations that only the owning user is permitted to, such as `chmod` operations as [performed by the Paketo Maven buildpack](https://github.com/paketo-buildpacks/maven/blob/v6.14.0/maven/maven_manager.go#L136-L138).
+- Instead of running all build strategy steps as the same user, we can also make use of supplemental groups: we collect the runAsGroups of all build strategy, and Shipwright-managed steps, and configure those as supplemental groups on the Pod's security context. In addition, we change all our source steps to make the files not only user- but also group-writable. As a result, all strategy steps will have write access to all source files due to group ownership. This works for most cases, but not for build strategies that try to run operations that only the owning user is permitted to, such as `chmod` operations as [performed by the Paketo Maven buildpack](https://github.com/paketo-buildpacks/maven/blob/v6.14.0/maven/maven_manager.go#L136-L138).
+- Instead of injecting the `/etc/group` and `/etc/passwd` files through volume mounts, we could have made those two files writable in the container images. Shipwright-managed steps that require their runAs user to be in those files, would then update those files. This would have opened the door that somebody could exec into a running container and write any data to those files. This would have had no harm as long as we do not grant `SETGID` and `SETUID` capabilities to those containers.
+- Instead of providing any means to have the correct data in the `/etc/group` and `/etc/passwd` files, we can change the logic to fully rely on code and external binaries that are able to run without the current runAs user being defined in those files. As of now, this is not possible. [go-git](https://github.com/go-git/go-git) is the alternative that could be used instead of the `git` binary to clone repositories. But, this comes [without lfs support](https://github.com/go-git/go-git/issues/381). In the Golang space, an alternative does not exist, root problem is that [git-lfs, while being implemented in Go, does not provide a stable Go API](https://github.com/git-lfs/git-lfs#limitations). Hacking around this is not reasonable because git-lfs internally calls out to the `git` binary. Libraries in other languages such as [libgit2](https://libgit2.org/) have not been evaluated.
+- Instead of introducing the strategy-level `securityContext`, we could have implicitly assumed that Shipwright-managed steps should run as the user and group that is defined consistently on all strategy steps. This would have meant a behavioral change that potentially could have broken existing build strategies.
 
 ## Implementation History
 
-Draft pull requests for option 1 are here: [SHIP-0036: Option 1: Part 1: Update Git base image to allow an arbitrary user to run it #1263](https://github.com/shipwright-io/build/pull/1263) and [SHIP-0036: Option 1: Part 2: Update runtime logic to use a common runAsUser and runAsGroup in the steps when possible #1264](https://github.com/shipwright-io/build/pull/1264).
-
-Draft pull requests for option 2 are here: [SHIP-0036: Option 2: Part 1: Update base images to allow an arbitrary user to run it #1268](https://github.com/shipwright-io/build/pull/1268) and [SHIP-0036: Option 2: Part 2: Update runtime logic to use a common runAsUser and runAsGroup in the steps when possible #1266](https://github.com/shipwright-io/build/pull/1266)
+Draft pull requests are here: [SHIP-0036: Part 1: Update base images to allow an arbitrary user to run it #1268](https://github.com/shipwright-io/build/pull/1268) and [SHIP-0036: Part 2: Update runtime logic to use a common runAsUser and runAsGroup in the steps when possible #1266](https://github.com/shipwright-io/build/pull/1266)
