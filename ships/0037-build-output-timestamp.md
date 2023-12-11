@@ -16,7 +16,7 @@ approvers:
   - "@adambkaplan"
   - "@qu1queee"
 creation-date: 2023-04-24
-last-updated: 2023-04-24
+last-updated: 2023-12-11
 status: implementable
 ---
 
@@ -80,6 +80,7 @@ The `timestamp` entry is an optional string value field with the default being `
 
 - `Zero` refers to the Unix epoch start date of January, 1st 1970.
 - `SourceTimestamp` would lead to taking the provided source code meta data to define the timestamp. In case the source is a Git repository, the Git commit that is used for the build defines the source timestamp. In any other case, the newest creation time stamp of the source files is used. Note, the timestamp needs to be taken from the user provided source files since the build process might introduce new files as part of the build itself. The source step needs to be extended to introduce a reliable point and single spot in which the source timestamp is being obtained.
+- `BuildTimestamp` defines that the image timestamp is to be set to the current actual execution timestamp of the Build Run.
 - `<timestamp>` must be a parsable Unix epoch timestamp that lies in the past and will be then used as-is for the creation timestamp of the image, i.e. custom neutral timestamp. An empty string is considered not parsable and therefore results in an error.
 - Null (unset) results in no timestamp usage at all, which means that the respective build strategy timestamp is used.
 
