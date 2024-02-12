@@ -17,7 +17,7 @@ approvers:
   - "@qu1queee"
 creation-date: 2023-04-24
 last-updated: 2023-12-11
-status: implementable
+status: implemented
 ---
 
 # Build Output Image Timestamp
@@ -73,7 +73,7 @@ We will extend the Build resource by an additional (Unix epoch) timestamp entry 
 ```yaml
 spec:
   output:
-    timestamp: Zero | SourceTimestamp | <timestamp> | (null)
+    timestamp: Zero | SourceTimestamp | BuildTimestamp | <timestamp> | (null)
 ```
 
 The `timestamp` entry is an optional string value field with the default being `null`. It can have multiple values that lead to different behavior:
