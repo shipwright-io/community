@@ -20,7 +20,7 @@ Documentation is spread across the code repositories, and is consolidated in the
 * Talk with us on the Kubernetes Slack - [#shipwright](https://kubernetes.slack.com/messages/shipwright) channel
 * Attend one of our community meetings - see our [public calendar](https://calendar.google.com/calendar/embed?src=shipwright-admin%40lists.shipwright.io&ctz=America%2FNew_York) for up to date information.
   * Weekly Community Update - every Monday, 9AM Eastern Time
-  * Bi-weekly Backlog Refinement - every other Wednesday, 9AM Eastern Time
+  * Bi-weekly Backlog Refinement - every other Thursday, 10AM Eastern Time
 
 ## SHIPs
 
