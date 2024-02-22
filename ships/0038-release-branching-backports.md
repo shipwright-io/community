@@ -83,7 +83,7 @@ Release tags and artifacts for a given `X.Y` version **MUST** be created from th
 respective `release-vX.Y` release branch. Releases **MUST** use a valid semantic
 version when tagging or versioning artifacts, of the format `vX.Y.Z`. Projects
 **MAY** append a hyphen to indicate a release candidate or other form of "pre-
-release" version, in accorance with the SemVer 2.0 specification. For example,
+release" version, in accordance with the SemVer 2.0 specification. For example,
 `v0.13.0-rc2` can be used to represent version 0.13.0, _release candidate 2_.
 CI checks to merge code in the the `main` branch **MUST** also be run against code
 in release branches. Other measures applied to `main` branches (ex: branch
@@ -201,4 +201,4 @@ Actions, or enabling features in Prow (currently provided by OpenShift CI).
 
 ## Implementation History
 
-- 2024-02-20: Inital proposal (`provisional`)
+- 2024-02-20: Initial proposal (`provisional`)
