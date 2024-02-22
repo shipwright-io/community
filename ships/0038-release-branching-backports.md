@@ -15,7 +15,7 @@ approvers:
   - "@qu1queee"
   - "@SaschaSchwarze0"
 creation-date: 2024-02-20
-last-updated: 2024-02-20
+last-updated: 2024-02-22
 status: provisional
 see-also:
   - https://github.com/shipwright-io/community/issues/85
@@ -55,10 +55,10 @@ or other potential breaking changes.
 
 - Define processes and procedures Shipwright projects should use when creating a
   release with respect to code branching.
-- Define processes for applying bug fixes and security advisories to prior release
-  versions.
-- Apply the backport process to the v0.12.0 release of the Shipwright build, cli,
-  and operator projects.
+- Define processes for applying bug fixes and security advisories to the most recent
+  released version.
+- Apply the backport process to current released versions of the Shipwright build,
+  cli, and operator projects.
 
 ### Non-Goals
 
@@ -67,8 +67,9 @@ or other potential breaking changes.
 - Apply the backport process to "alpha" maturity projects in Shipwright (ex:
   triggers).
 - Docs/website content strategy for released versions.
-- Apply backport process to v0.11.0 and earlier.
+- Apply backport process to older released versions.
 - Prescribe a cadence for feature and bugfix releases.
+- Establish long term support (LTS) versioning and backport processes.
 
 ## Proposal
 
@@ -107,19 +108,22 @@ following order:
 2. Cherry pick to `release-v0.13`
 3. Cherry pick to `release-v0.12` _after_ code merges in `release-v0.13`.
 
-Merging out of semantic version order **MAY** be done at the discretion of project
-maintainers, especially in situations that involve security advisories with
-"Critical" severity ratings.
+In general, there **SHOULD** be at most two branches accepting backports (the most
+recent release, and a current release candidate). Maintainers **MAY** accept
+backports to prior releases at their discretion, for instance if a security advisory
+with "Critical" severity impacts multiple prior releases. Merging out of semantic
+version order **MAY** likewise be done at the discretion of project maintainers in
+such situations.
 
 ### User Stories [optional]
 
 - As a maintainer of a Shipwright distribution, I want Important/Critical severity
-  security advisories to be backported to a `v0.12.z` release stream so that I can
+  security advisories to be backported to the most recent release so that I can
   patch security vulnerabilities without introducing new features or breaking
   changes.
 - As a cluster admin / architect deploying Shipwright to my engineering teams, I
-  want to receive bug fixes for `v0.12.z` releases so that I don't need to wait for
-  a new feature upstream to receive bug fixes and security advisories.
+  want to receive bug fixes for the most recent release so that I don't need to wait
+  for a new feature release upstream to receive bug fixes and security advisories.
 
 ### Implementation Notes
 
