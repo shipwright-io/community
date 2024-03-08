@@ -143,19 +143,19 @@ We can craete a reusable "release branching" workflow [2] as follows:
 - Create the release branch via standard git commands, ensuring the workflow is
   granted write permission to the appropriate repository.
 
-Example (`shipwright-io/.github/workflows/release-branch.yml`):
+Example (`shipwright-io/.github/.github/workflows/release-branch.yml`):
 
 ```yaml
 name: Release Brancher
-  on:
-    workflow_call:
-      inputs:
-        release-version:
-          required: true
-          type: string
-        git-ref:
-          required: false
-          type: string
+on:
+  workflow_call:
+    inputs:
+      release-version:
+        required: true
+        type: string
+      git-ref:
+        required: false
+        type: string
 jobs:
   release-brancher:
     runs-on: ubuntu-latest
@@ -165,7 +165,7 @@ jobs:
         ref: ${{ inputs.git-ref }}
     - name: Create release branch
       env:
-        - RELEASE_VERSION: release-${{ inputs.release-version }}
+        RELEASE_VERSION: release-${{ inputs.release-version }}
       run: |
         git branch ${RELEASE_VERSION}
         git switch ${RELEASE_VERSION}
@@ -177,19 +177,19 @@ Each repository can then be onboarded using a starter workflow that is hosted in
 
 ```yaml
 name: Create Release Branch
-  on:
-    workflow_dispatch:
-      inputs:
-        release-version:
-          required: true
-          type: string
-          description: "Semantic version for the release branch (vX.Y format)"
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        required: true
+        type: string
+        description: "Semantic version for the release branch (vX.Y format)"
 jobs:
   create-release-branch:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    uses: shipwright.io/.github/workflows/release-branch.yml@main
+    uses: shipwright.io/.github/.github/workflows/release-branch.yml@main
     with:
       release-version: ${{ inputs.release-version }}
 ```
