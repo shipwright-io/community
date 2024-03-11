@@ -136,7 +136,7 @@ allows GitHub actions to be shared consistently across the organization. We alre
 have a standing "add to project" workflow that adds all new issues and pull requests
 to the main "Shipwright Overview" GitHub project. [1]
 
-We can craete a reusable "release branching" workflow [2] as follows:
+We can create a reusable "release branching" workflow [2] as follows:
 
 - Use `workflow_call` as the trigger, to be run on the main branch. [2]
 - Receive a semantic version as input, to then create the release branch name.
@@ -268,7 +268,7 @@ Backporting can be done in one of two ways:
 ### Test Plan
 
 CI jobs for each component repository will need to support execution from a branch
-that matches the release branch pattern. This is done by updating the `on` stanza of
+that matches the release branch pattern. This is done by updating the `on.pull_request` stanza of
 the GitHub action to match `release-v*` branch names (same as branch protection
 rules). This should be updated for both push events as well as pull requests that
 target the release branch.
@@ -310,13 +310,13 @@ events as well as pull requests.
 _Mitigation_: Manually triggered workflows require the "write" permission to a
 repository. These are individuals who typically have been promoted to the "Reviewer"
 role in the project and have established some level of trust within the community.
-Membership and contributor status should be reviewed regularly (at least annualy) to
+Membership and contributor status should be reviewed regularly (at least annually) to
 reduce risk.
 
 ## Drawbacks
 
 - The "release brancher" workflow needs to be copied to individual repositories via
-  the GitHub starter worflows process. This makes it easier to check out code and
+  the [GitHub starter worflows](https://docs.github.com/en/actions/learn-github-actions/using-starter-workflows) process. This makes it easier to check out code and
   create a relase branch via git commands.
 - Branch protection rules will need to be copied over by hand, due to limitations in
   the pattern matching behavior in GitHub. To simplify matching rules, GitHub does
