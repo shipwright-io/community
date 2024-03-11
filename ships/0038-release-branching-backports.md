@@ -139,7 +139,8 @@ to the main "Shipwright Overview" GitHub project. [1]
 We can create a reusable "release branching" workflow [2] as follows:
 
 - Use `workflow_call` as the trigger, to be run on the main branch. [2]
-- Receive a semantic version as input, to then create the release branch name.
+- Receive a semantic version as input (in `vX.Y` format) to create the release branch
+  name.
 - Create the release branch via standard git commands, ensuring the workflow is
   granted write permission to the appropriate repository.
 
@@ -167,8 +168,7 @@ jobs:
       env:
         RELEASE_VERSION: release-${{ inputs.release-version }}
       run: |
-        git branch ${RELEASE_VERSION}
-        git switch ${RELEASE_VERSION}
+        git switch -c ${RELEASE_VERSION}
         git push --set-upstream origin ${RELEASE_VERSION}
 ```
 
@@ -207,7 +207,10 @@ However, each will need to be modified so the release workflow runs against the
 appropriate `release-vX.Y` branch:
 
 - `build`: The `release.yml` workflow will receive a new required parameter,
-  `release-branch`. This will be passed to the standard git checkout action.
+  `release-branch`. This will be passed to the standard git checkout action. The
+  current release workflow creates a follow-up PR to update the README with the
+  latest release version/tag. This will be opened against the `release-branch` (not)
+  `main`
 - `operator`: The `release.yml` workflow will receive a new required parameter,
   `release-branch`. This will be passed to the standard git checkout action.
 - `cli`: The `cli` repository will add a new workflow, `release-tag.yml`, which will
@@ -252,16 +255,20 @@ The branch protection policy needs to allow GitHub actions to push branches and 
 
 #### Backport Process
 
-Backporting can be done in one of two ways:
+Backporting can be done in one of three ways:
 
 1. "Manually": this would involve a contributor running `git cherry-pick` on their
    local machine against a release branch, resolving any merge conflicts, then
-   opening a pull request
+   opening a pull request.
 2. Prow `cherrypick` bot: our existing configuration for OpenShift CI will be
    updated to enable the Prow cherrypick plugin. The bot can automatically create
    cherrypick pull requests by adding a `/cherrypick <branch-name>` comment to an
    existing pull request, either when it is open or after merge. See the Prow
    docs [1] for more details.
+3. Standard pull request - typically reserved for the following:
+   1. Dependency updates, where changes to `go.mod` and `go.sum` would likely lead
+      to merge conflicts across release branches.
+   2. Bug fixes for code that was refactored in a subsequent release.
 
 [1] https://docs.prow.k8s.io/docs/components/external-plugins/cherrypicker/
 
@@ -316,8 +323,9 @@ reduce risk.
 ## Drawbacks
 
 - The "release brancher" workflow needs to be copied to individual repositories via
-  the [GitHub starter worflows](https://docs.github.com/en/actions/learn-github-actions/using-starter-workflows) process. This makes it easier to check out code and
-  create a relase branch via git commands.
+  the [GitHub starter worflows](https://docs.github.com/en/actions/learn-github-actions/using-starter-workflows)
+  process. This makes it easier to check out code and create a relase branch via git
+  commands.
 - Branch protection rules will need to be copied over by hand, due to limitations in
   the pattern matching behavior in GitHub. To simplify matching rules, GitHub does
   not have full RegEx support for branch protection matching. They instead support
@@ -326,6 +334,10 @@ reduce risk.
   workflow. Defining a reusable workflow mitigates this drawback - the bulk of the
   logic to set up a release branch is centralized.
 - CI jobs will need to be updated by hand to run against the release branch.
+- The release workflow for `build` will by default open the README update pull
+  requests against the release branch. This means that updates to `main` may have to
+  be done manually, or the README in `main` will need to reference a floating
+  "latest" release tag.
 
 ## Alternatives
 
