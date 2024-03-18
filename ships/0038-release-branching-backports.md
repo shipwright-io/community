@@ -15,7 +15,7 @@ approvers:
   - "@qu1queee"
   - "@SaschaSchwarze0"
 creation-date: 2024-02-20
-last-updated: 2024-02-22
+last-updated: 2024-03-05
 status: provisional
 see-also:
   - https://github.com/shipwright-io/community/issues/85
@@ -28,15 +28,15 @@ superseded-by: []
 
 ## Release Signoff Checklist
 
-- [ ] Enhancement is `implementable`
-- [ ] Design details are appropriately documented from clear requirements
-- [ ] Test plan is defined
-- [ ] Graduation criteria for dev preview, tech preview, GA
-- [ ] User-facing documentation is created in [docs](/docs/)
+- [x] Enhancement is `implementable`
+- [x] Design details are appropriately documented from clear requirements
+- [x] Test plan is defined
+- [x] Graduation criteria for dev preview, tech preview, GA
+- [x] User-facing documentation is created in [docs](/docs/)
 
 ## Open Questions [optional]
 
-TBD as we iterate through the enhancement proposal lifecycle.
+None.
 
 ## Summary
 
@@ -70,6 +70,8 @@ or other potential breaking changes.
 - Apply backport process to older released versions.
 - Prescribe a cadence for feature and bugfix releases.
 - Establish long term support (LTS) versioning and backport processes.
+- Alter our current process for generating release notes.
+- Standardize on a single release toolchain.
 
 ## Proposal
 
@@ -127,36 +129,162 @@ such situations.
 
 ### Implementation Notes
 
-**Note:** *Section not required until feature is ready to be marked 'implementable'.*
+#### Release Branching Workflow
 
-TBD - requires investigation into the following:
+Shipwright has set up the `.github` repository which - amongst other features -
+allows GitHub actions to be shared consistently across the organization. We already
+have a standing "add to project" workflow that adds all new issues and pull requests
+to the main "Shipwright Overview" GitHub project. [1]
 
-- Current release script assumptions with respect to branch names.
-- Current CI assumptions with respect to branch names.
-- Applying the process "retroactively" to build, cli, and operator repos.
+We can create a reusable "release branching" workflow [2] as follows:
+
+- Use `workflow_call` as the trigger, to be run on the main branch. [2]
+- Receive a semantic version as input (in `vX.Y` format) to create the release branch
+  name.
+- Create the release branch via standard git commands, ensuring the workflow is
+  granted write permission to the appropriate repository.
+
+Example (`shipwright-io/.github/.github/workflows/release-branch.yml`):
+
+```yaml
+name: Release Brancher
+on:
+  workflow_call:
+    inputs:
+      release-version:
+        required: true
+        type: string
+      git-ref:
+        required: false
+        type: string
+jobs:
+  release-brancher:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.git-ref }}
+    - name: Create release branch
+      env:
+        RELEASE_VERSION: release-${{ inputs.release-version }}
+      run: |
+        git switch -c ${RELEASE_VERSION}
+        git push --set-upstream origin ${RELEASE_VERSION}
+```
+
+Each repository can then be onboarded using a starter workflow that is hosted in the
+.github repository (`.github/workflow-templates/release-branch.yml`) [3]:
+
+```yaml
+name: Create Release Branch
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        required: true
+        type: string
+        description: "Semantic version for the release branch (vX.Y format)"
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    uses: shipwright.io/.github/.github/workflows/release-branch.yml@main
+    with:
+      release-version: ${{ inputs.release-version }}
+```
+
+[1] https://github.com/shipwright-io/.github/blob/main/.github/workflows/issues.yml
+
+[2] https://docs.github.com/en/actions/using-workflows/reusing-workflows
+
+[3] https://docs.github.com/en/actions/using-workflows/creating-starter-workflows-for-your-organization
+
+#### Release Workflows
+
+Component repositories will retain the core of their existing release workflows.
+However, each will need to be modified so the release workflow runs against the
+appropriate `release-vX.Y` branch:
+
+- `build`: The `release.yml` workflow will receive a new required parameter,
+  `release-branch`. This will be passed to the standard git checkout action. The
+  current release workflow creates a follow-up PR to update the README with the
+  latest release version/tag. This will be opened against the `release-branch` (not)
+  `main`
+- `operator`: The `release.yml` workflow will receive a new required parameter,
+  `release-branch`. This will be passed to the standard git checkout action.
+- `cli`: The `cli` repository will add a new workflow, `release-tag.yml`, which will
+  create the tag for the upcoming release. This will accept `release-branch` as
+  required parameter, to be passed to the standard git checkout action:
+
+  ```yaml
+  name: Create Release Tag
+  on:
+    workflow_dispatch:
+      inputs:
+        release-branch:
+          required: true
+          type: string
+          description: "Branch to use for creating the release tag"
+        version-tag:
+          required: true
+          type: string
+          description: "Full semantic version of the release (in vX.Y.Z format)"
+  jobs:
+    create-release-tag:
+      ... # permissions, check out ${{ inputs.release-branch }}
+      - name: Tag release
+        env:
+          - VERSION_TAG: ${{ inputs.version-tag }}
+        run: |
+          git tag ${VERSION_TAG}
+          git push --tags
+  ```
+
+  Once the tag is created, the `cli` release workflow should work as-is.
+
+#### GitHub Branch Protection
+
+Each repository will need to create a new branch protection rule that applies to
+`release-v*` branches. Branch protection settings from the `main` branch will need to
+be manually copied over to the release branch rule.
+This is due to simplifying limitations in how GitHub does pattern matching for
+[branch protection rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule#about-branch-protection-rules).
+
+The branch protection policy needs to allow GitHub actions to push branches and tags.
+
+#### Backport Process
+
+Backporting can be done in one of three ways:
+
+1. "Manually": this would involve a contributor running `git cherry-pick` on their
+   local machine against a release branch, resolving any merge conflicts, then
+   opening a pull request.
+2. Prow `cherrypick` bot: our existing configuration for OpenShift CI will be
+   updated to enable the Prow cherrypick plugin. The bot can automatically create
+   cherrypick pull requests by adding a `/cherrypick <branch-name>` comment to an
+   existing pull request, either when it is open or after merge. See the Prow
+   docs [1] for more details.
+3. Standard pull request - typically reserved for the following:
+   1. Dependency updates, where changes to `go.mod` and `go.sum` would likely lead
+      to merge conflicts across release branches.
+   2. Bug fixes for code that was refactored in a subsequent release.
+
+[1] https://docs.prow.k8s.io/docs/components/external-plugins/cherrypicker/
 
 ### Test Plan
 
-TBD
-
-**Note:** *Section not required until targeted at a release.*
-
-```
-Consider the following in developing a test plan for this enhancement:
-
-- Will there be e2e and integration tests, in addition to unit tests?
-- How will it be tested in isolation vs with other components?
-
-No need to outline all of the test cases, just the general strategy. Anything that would count as
-tricky in the implementation and anything particularly challenging to test should be called out.
-
-All code is expected to have adequate tests (eventually with coverage expectations).
-```
+CI jobs for each component repository will need to support execution from a branch
+that matches the release branch pattern. This is done by updating the `on.pull_request` stanza of
+the GitHub action to match `release-v*` branch names (same as branch protection
+rules). This should be updated for both push events as well as pull requests that
+target the release branch.
 
 ### Release Criteria
 
-TBD - ideally this is introduced to release `v0.13.0` and applied retroactively to
-`v0.12.z`.
+This process will apply to the `v0.13.0` release moving forward. It will also be
+applied retroactively to `v0.12.0` by running the release branch workflow,
+referencing an appropriate release tag.
 
 #### Removing a deprecated feature [if necessary]
 
@@ -164,41 +292,109 @@ Not Applicable
 
 #### Upgrade Strategy [if necessary]
 
-TBD
+Not directly applicable.
+
+Care must be taken when introducing "breaking" changes to the release brancher
+workflow. The workflow parameters should be treated like an API.
 
 ### Risks and Mitigations
 
-TBD once the proposal is flushed out.
+**Risk**: Unreviewed code merges in release branches.
 
-```
-What are the risks of this proposal and how do we mitigate? Think broadly. For example, consider
-both security and how this will impact the larger Shipwright ecosystem.
+_Mitigation:_ Branch protection rules for `main` will be copied over to release
+branches. Checks that ensure unreviewed code is blocked from merge will be applied
+to release candidates and bugfix releases. At present, no workflow requires code to
+be modified during the release process.
 
-How will security be reviewed and by whom? How will UX be reviewed and by whom?
-```
+
+**Risk**: Code will be released untested.
+
+_Mitigation_: CI workflows will be updated to run on the release branch for push
+events as well as pull requests.
+
+**Risk**: Unauthorized releases.
+
+_Mitigation_: Manually triggered workflows require the "write" permission to a
+repository. These are individuals who typically have been promoted to the "Reviewer"
+role in the project and have established some level of trust within the community.
+Membership and contributor status should be reviewed regularly (at least annually) to
+reduce risk.
 
 ## Drawbacks
 
-TBD once the implementation details are documented.
-
-```
-The idea is to find the best form of an argument why this enhancement should _not_ be implemented.
-```
+- The "release brancher" workflow needs to be copied to individual repositories via
+  the [GitHub starter worflows](https://docs.github.com/en/actions/learn-github-actions/using-starter-workflows)
+  process. This makes it easier to check out code and create a relase branch via git
+  commands.
+- Branch protection rules will need to be copied over by hand, due to limitations in
+  the pattern matching behavior in GitHub. To simplify matching rules, GitHub does
+  not have full RegEx support for branch protection matching. They instead support
+  syntax that is closer to "glob" matching on a Unix system.
+- The release branching workflow itself is "copied" to each repository via a starter
+  workflow. Defining a reusable workflow mitigates this drawback - the bulk of the
+  logic to set up a release branch is centralized.
+- CI jobs will need to be updated by hand to run against the release branch.
+- The release workflow for `build` will by default open the README update pull
+  requests against the release branch. This means that updates to `main` may have to
+  be done manually, or the README in `main` will need to reference a floating
+  "latest" release tag.
 
 ## Alternatives
 
-TBD as the enhancement proposal progresses through its lifecycle.
+### Single Release Brancher Workflow
 
-```
-Similar to the `Drawbacks` section the `Alternatives` section is used to highlight and record other
-possible approaches to delivering the value proposed by an enhancement.
-```
+Instead of using a starter workflow for release branching, we could have set up a
+single workflow in `.github` that applied to _all_ Shipwright repositories. Doing
+this would require some extra logic to tell the checkout action which repository to
+check out and push the release branch to. It also removes flexibility in case a
+repository needs to run other workflows as pre/post branching "hooks." For example,
+after branching the `operator` repository may want to update the `VERSION` variable
+in its Makefile and regenerate the operator bundle manifest.
+
+### Standardize on a release toochain (GoReleaser)
+
+Since most projects in Shipwright are go-based, we could choose a single toolchain
+like GoReleaser to build our release artifacts [1]. This would require substantially
+more effort, requiring re-writes to how the `build` and `operator` repositories
+release code. The current proposal takes advantage of existing project release
+workflows, only requiring small modifications in specific spots.
+
+### Status Quo
+
+Keeping the status quo (_no release branching_) means that the community cannot
+provide sanctioned bugfix/security patch releases. Downstream distributions remain
+free to build this infrastructure on their own. Lack of process for backports/
+release branching could impact our evaluations for maturity status (ex: "Graduated"
+in CNCF or CDF).
+
+### Release .0 from `main`
+
+Instead of branching first, then releasing, we could release the "dot zero" release
+from `main`. This simplifies the initial release process and makes it easier to use
+our current release tooling "as is." The short-term savings are negated by long-term
+costs/tech debt with this approach:
+
+- Bugfix releases will use a slightly skewed set of release scripts compared to "dot
+  zero."
+- Release branches for z-streams will need to be created after the fact, at the will
+  of the project maintainers. This is a potential "open loop" that is not critical
+  to the initial release process, putting it at risk of being skipped or forgotten.
+- Release branching makes it easier for "experimental" features to merge earlier.
+  Often this work will start in a "feature" branch, then merge into the `main`
+  branch early in a release cycle so bugs can be identified and patched before
+  end-users consume it.
 
 ## Infrastructure Needed [optional]
 
-TBD - this will likely require new GitHub actions, changes to existing GitHub
-Actions, or enabling features in Prow (currently provided by OpenShift CI).
+New workflows in the `.github` repository:
+
+- Reusable workflow for release branching
+- Starter workflow for release branching (to be copied over)
+
+Also needs a new workflow in the `cli` repository to create release tags. This was
+a pre-existing need.
 
 ## Implementation History
 
 - 2024-02-20: Initial proposal (`provisional`)
+- 2024-03-05: Implementable version
