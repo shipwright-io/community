@@ -93,11 +93,18 @@ several motivations for controlling where a build pod is scheduled:
 - Allow build pods to run on specific nodes using node selectors.
 - Allow build pods to set node affinity/anti-affinity rules.
 - Allow build pods to tolerate node taints.
-- Allow node selection, pod affinity, and taint toleration to be set at the cluster level.
+- Allow build pods to use a [custom scheduler](https://kubernetes.io/docs/tasks/extend-kubernetes/configure-multiple-schedulers/).
 
 ### Non-Goals
 
 - Primary feature support for multi-arch builds.
+- Allow node selection, pod affinity, and taint toleration to be set at the cluster level.
+  While this may be desirable, it requires a more sophisticated means of configuring the build
+  controller. Setting default values for scheduling options can be considered as a follow-up
+  feature.
+- Prevent use of build pod scheduling fields. This is best left to an admission controller like
+  [OPA Gatekeeper](https://www.openpolicyagent.org/docs/latest/kubernetes-introduction/) or
+  [Kyverno](https://kyverno.io/).
 
 ## Proposal
 
@@ -124,6 +131,11 @@ running builds are not scheduled/clustered on the same node.
 
 As a cluster admin, I want builds to be able to tolerate provided node taints so that they can
 be scheduled on nodes that are not suitable/designated for application workloads.
+
+#### Custom Scheduler
+
+As a platform engineer/cluster admin, I want builds to use a custom scheduler so that I can provide
+my own scheduler that is optimized for my build workloads.
 
 ### Implementation Notes
 
