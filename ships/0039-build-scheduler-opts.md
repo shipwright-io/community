@@ -15,8 +15,8 @@ approvers:
   - "@qu1queee"
   - "@SaschaSchwarze0"
 creation-date: 2024-05-15
-last-updated: 2024-05-15
-status: provisional
+last-updated: 2024-06-20
+status: Implementable
 see-also: []
 replaces: []
 superseded-by: []
@@ -24,46 +24,17 @@ superseded-by: []
 
 # Build Scheduler Options
 
-<!-->
-
-This is the title of the enhancement. Keep it simple and descriptive. A good title can help
-communicate what the enhancement is and should be considered as part of any review.
-
-The YAML `title` should be lowercased and spaces/punctuation should be replaced with `-`.
-
-To get started with this template:
-
-1. **Make a copy of this template.** Copy this template into the main
-   `proposals` directory, with a filename like `NNNN-neat-enhancement-idea.md`
-   where `NNNN` is an incrementing number associated with this SHIP.
-2. **Fill out the "overview" sections.** This includes the Summary and Motivation sections. These
-   should be easy and explain why the community should desire this enhancement.
-3. **Create a PR.** Assign it to folks with expertise in that domain to help
-   sponsor the process. The PR title should be like "SHIP-NNNN: Neat
-   Enhancement Idea", where "NNNN" is the number associated with this SHIP.
-4. **Merge at each milestone.** Merge when the design is able to transition to a new status
-   (provisional, implementable, implemented, etc.). View anything marked as `provisional` as an idea
-   worth exploring in the future, but not accepted as ready to execute. Anything marked as
-   `implementable` should clearly communicate how an enhancement is coded up and delivered. Aim for
-   single topic PRs to keep discussions focused. If you disagree with what is already in a document,
-   open a new PR with suggested changes.
-
-The `Metadata` section above is intended to support the creation of tooling around the enhancement
-process.
-
-<-->
-
 ## Release Signoff Checklist
 
-- [ ] Enhancement is `implementable`
-- [ ] Design details are appropriately documented from clear requirements
-- [ ] Test plan is defined
+- [x] Enhancement is `implementable`
+- [x] Design details are appropriately documented from clear requirements
+- [x] Test plan is defined
 - [ ] Graduation criteria for dev preview, tech preview, GA
 - [ ] User-facing documentation is created in [docs](/docs/)
 
 ## Open Questions [optional]
 
-TBD
+- Should this be enabled always? Should we consider an alpha -> beta lifecycle for this feature? (ex: off by default -> on by default)
 
 ## Summary
 
@@ -71,8 +42,8 @@ Add API options that influece where `BuildRun` pods are scheduled on Kubernetes.
 acomplished through the following mechanisms:
 
 - [Node Selectors](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
-- [Affinity/anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
 - [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+- [Custom Schedulers](https://kubernetes.io/docs/tasks/extend-kubernetes/configure-multiple-schedulers/)
 
 ## Motivation
 
@@ -85,14 +56,15 @@ several motivations for controlling where a build pod is scheduled:
 - Clusters may have mutiple worker node architectures and even OS (Windows nodes). Container images
   are by their nature specific to the OS and CPU architecture, and default to the host operating
   system and architecture. Builds may need to specify OS and architecture through node selectors.
-- Left unchecked, builds may congregate on a set of nodes, impacting overall cluster utilization
-  and stability.
+- The default Kubernetes scheduler may not efficiently schedule build workloads - especially
+  considering how Tekton implements step containers and sidecars. A custom scheduler optimized for
+  Tekton or other batch workloads may lead to better cluster utulization.
 
 ### Goals
 
 - Allow build pods to run on specific nodes using node selectors.
 - Allow build pods to tolerate node taints.
-- Allow build pods to use a [custom scheduler](https://kubernetes.io/docs/tasks/extend-kubernetes/configure-multiple-schedulers/).
+- Allow build pods to use a custom scheduler.
 
 ### Non-Goals
 
@@ -107,14 +79,12 @@ several motivations for controlling where a build pod is scheduled:
 - Allow build pods to set node affinity/anti-affinity rules. Affinity/anti-affinity is an
   incredibly rich and complex API (see [docs](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity)
   for more information). We should strive to provide a simpler interface that is tailored
-  specifically to builds. For the sake of keeping the scope of this SHIP narrow, this feature is
-  being dropped. Build affinity rules can/should be addressed in a follow up feature.
+  specifically to builds. This feature is being dropped to narrow the scope of this SHIP. Build
+  affinity rules can/should be addressed in a follow up feature.
 
 ## Proposal
 
-This is where we get down to the nitty gritty of what the proposal actually is.
-
-### User Stories [optional]
+### User Stories
 
 #### Node Selection - platform engineer
 
@@ -138,33 +108,107 @@ my own scheduler that is optimized for my build workloads.
 
 ### Implementation Notes
 
-TBD
+#### API Updates
 
-<!-->
-**Note:** *Section not required until feature is ready to be marked 'implementable'.*
+The `BuildSpec` API for Build and BuildRun will be updated to add the following fields:
 
-Describe in detail what you propose to change. Be specific as to how you intend to implement this
-feature. If you plan to introduce a new API field, provide examples of how the new API will fit in
-the broader context and how end users could invoke the new behavior.
-<-->
+```yaml
+spec:
+  ...
+  nodeSelector: # map[string]string
+    <node-label>: "label-value"
+  tolerations: # []Toleration
+    - key: "taint-key"
+      operator: Exists|Equal
+      value: "taint-value"
+  schedulerName: "custom-scheduler-name" # string
+```
+
+The `nodeSelector` and `schedulerName` fields will use golang primitives that match their k8s
+equivalents.
+
+#### Tolerations
+
+The Tolerations API for Shipwright will support a limited subset of the upstream Kubernetes
+Tolerations API. For simplicity, any Shipwright Build or BuildRun with a toleration set will use
+the `NoSchedule` [taint effect](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+
+```yaml
+spec:
+  tolerations: # Optional array
+    - key: "taint-key" # Aligns with upstream k8s taint labels. Required
+      operator: Exists|Equal # Aligns with upstream k8s - key exists or node label key = value. Required
+      value: "taint-value" # Alights with upstream k8s taint value. Optional.
+```
+
+As with upstream k8s, the Shipwright Tolerations API array should support
+[strategic merge JSON patching](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#notes-on-the-strategic-merge-patch).
+
+#### Precedence Ordering and Value Merging
+
+Values in `BuildRun` will override those in the referenced `Build` object (if present). Values for
+`nodeSelector` and `tolerations` should use strategic merge logic when possible:
+
+- `nodeSelector` merges using map keys. If the map key is present in the `Build` and `BuildRun`
+  object, the `BuildRun` overrides the value.
+- `tolerations` merges using the taint key. If the taint key is present in the `Build` and
+  `BuildRun` object, the `BuildRun` overrides the value.
+
+This allows the `BuildRun` object to "inherit" values from a parent `Build` object.
+
+#### Impact on Tekton TaskRun
+
+Tekton supports tuning the pod of the `TaskRun` using the
+[podTemplate](https://tekton.dev/docs/pipelines/taskruns/#specifying-a-pod-template) field. When
+Shipwright creates the `TaskRun` for a build, the respective node selector, tolerations, and
+scheduler name can be passed through.
+
+#### Command Line Enhancements
+
+The `shp` CLI _may_ be enhanced to add flags that set the node selector, tolerations, and custom
+scheduler for a `BuildRun`. For example, `shp build run` can have the following new options:
+
+- `--node=<key>=<value>`: Use the node label key/value pair in the selector. Can be set more than
+  once for multiple key/value pairs..
+- `--tolerate=<key>` or `--tolerate=<key>=<value>`: Tolerate the taint key, in one of two ways:
+  - First form: taint key `Exists`.
+  - Second form: taint key `Equals` provided value.
+  - In both cases, this flag can be set more than once.
+- `--scheduler=<name>`: use custom scheduler with given name. Can only be set once.
+
+
+#### Hardening Guidelines
+
+Exposing `nodeSelector` and `tolerations` to end developers adds risk with respect to overall
+system availability. Some platform teams may not want these Kubernetes internals exposed or
+modifiable by end developers at all. To address these concerns, a hardening guideline for
+Shipwright Builds should also be published alongside documentation for this feature. This guideline
+should recommend the use of third party admission controllers (ex: OPA, Kyverno) to prevent builds
+from using values that impact system availability and performance. For example:
+
+- Block toleration of `node.kubernetes.io/*` taints. These are reserved for nodes that are not
+  ready to receive workloads for scheduling.
+- Block node selectors with the `node-role.kubernetes.io/control-plane` label key. This is reserved
+  for control plane components (`kube-apiserver`, `kube-controller-manager`, etc.)
+- Block toleration of the `node-role.kubernetes.io/control-plane` taint key. Same as above.
+
+See the [well known labels](https://kubernetes.io/docs/reference/labels-annotations-taints/#node-role-kubernetes-io-control-plane)
+documentation for more information.
 
 ### Test Plan
 
-TBD
+- Unit testing can verify that the generated `TaskRun` object for a build contains the desired pod
+  template fields.
+- End to end tests using `KinD` is possible for the `nodeSelector` and `tolerations` fields:
+  - KinD has support for configuring multiple [nodes](https://kind.sigs.k8s.io/docs/user/configuration/#nodes)
+  - Once set up, KinD nodes can simulate real nodes when it comes to pod scheduling, node labeling,
+    and node taints.
+- End to end testing for the `schedulerName` field requires the deployment of a custom scheduler,
+  plus code to verify that the given scheduler was used. This is non-trivial (see
+  [upstream example](https://kubernetes.io/docs/tasks/extend-kubernetes/configure-multiple-schedulers/#specify-schedulers-for-pods))
+  and adds a potential failure point to the test suite. Relying on unit testing alone is our best
+  option.
 
-<!-->
-**Note:** *Section not required until targeted at a release.*
-
-Consider the following in developing a test plan for this enhancement:
-
-- Will there be e2e and integration tests, in addition to unit tests?
-- How will it be tested in isolation vs with other components?
-
-No need to outline all of the test cases, just the general strategy. Anything that would count as
-tricky in the implementation and anything particularly challenging to test should be called out.
-
-All code is expected to have adequate tests (eventually with coverage expectations).
-<-->
 
 ### Release Criteria
 
@@ -178,40 +222,54 @@ Not applicable.
 
 #### Upgrade Strategy [if necessary]
 
-<!-->
+The top-level API fields will be optional and default to Golang empty values.
+On upgrade, these values will remain empty on existing `Build`/`BuildRun` objects.
 
-If applicable, how will the component be upgraded? Make sure this is in the test
-plan.
-
-Consider the following in developing an upgrade strategy for this enhancement:
-
-- What changes (in invocations, configurations, API use, etc.) is an existing cluster required to
-  make on upgrade in order to keep previous behavior?
-- What changes (in invocations, configurations, API use, etc.) is an existing cluster required to
-  make on upgrade in order to make use of the enhancement?
-<-->
 
 ### Risks and Mitigations
 
-TBD
+**Risk:** Node selector field allows disruptive workloads (builds) to be scheduled on control plane
+nodes.
 
-<!-->
-What are the risks of this proposal and how do we mitigate? Think broadly. For example, consider
-both security and how this will impact the larger Shipwright ecosystem.
+*Mitigation*: Hardening guideline added as a requirement for this feature. There may be some
+cluster topologies (ex: single node clusters) where scheduling builds on the "control plane" is not
+only desirable, but necessary. Hardening guidelines referencing third party admission controllers
+preserves flexibility while giving cluster administrators/platform teams the knowledge needed to
+harden their environments as they see fit.
 
-How will security be reviewed and by whom? How will UX be reviewed and by whom?
-<-->
 
 ## Drawbacks
 
-TBD - The idea is to find the best form of an argument why this enhancement should _not_ be implemented.
+Exposing these fields leaks - to a certain extent - our abstraction over Kubernetes. This proposal
+places k8s pod scheduling fields up front in the API for `Build` and `BuildRun`, a deviation from
+Tekton which exposes the fields through a `PodTemplate` sub-field. Cluster administrators may not
+want end developers to have control over where these pods are scheduled - they may instead wish to
+control pod scheduling through Tekton's
+[default pod template](https://github.com/tektoncd/pipeline/blob/main/docs/podtemplates.md#supported-fields)
+mechanism at the controller level.
+
+Exposing `nodeSelector` may also conflict with future enhancements to support
+[multi-architecture image builds](https://github.com/shipwright-io/build/issues/1119). A
+hypothetical build that fans out individual image builds to nodes with desired OS/architecture
+pairs may need to explicitly set the `k8s.io/os` and `k8s.io/architecture` node selector fields on
+generated `TaskRuns`. With that said, there is currently no mechanism for Shipwright to control
+where builds execute on clusters with multiple worker node architectures and operating systems.
+
 
 ## Alternatives
 
-TBD
+An earlier draft of this proposal included `affinity` for setting pod affinity/anti-affinity rules.
+This was rejected due to the complexities of Kubernetes pod affinity and anti-affinity. We need
+more concrete user stories from the community to understand what - if anything - we should do with
+respect to distributing build workloads through affinity rules. This may also conflict with
+Tekton's [affinity assistant](https://tekton.dev/docs/pipelines/affinityassistants/) feature - an optional configuration that is enabled by default in upstream Tekton.
 
-Similar to the `Drawbacks` section the `Alternatives` section is used to highlight and record other
-possible approaches to delivering the value proposed by an enhancement.
+An earlier draft also included the ability to set default values for these fields at the cluster
+level. This would be similar to Tekton's capability with the Pipeline controller configuration.
+Since this option is available at the Tekton pipeline level, adding nearly identical features to
+Shipwright is being deferred. Tuning pod template values with the Tekton pipeline controller may
+also be an acceptable alternative to this feature in some circumstances.
+
 
 ## Infrastructure Needed [optional]
 
@@ -220,6 +278,5 @@ Test KinD clusters may need to deploy with additional nodes where these features
 
 ## Implementation History
 
-Major milestones in the life cycle of a proposal should be tracked in `Implementation History`.
-
-
+- 2024-05-15: Created as `provisional`
+- 2024-06-20: Draft updated to `implementable`
