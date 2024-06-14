@@ -91,7 +91,6 @@ several motivations for controlling where a build pod is scheduled:
 ### Goals
 
 - Allow build pods to run on specific nodes using node selectors.
-- Allow build pods to set node affinity/anti-affinity rules.
 - Allow build pods to tolerate node taints.
 - Allow build pods to use a [custom scheduler](https://kubernetes.io/docs/tasks/extend-kubernetes/configure-multiple-schedulers/).
 
@@ -105,6 +104,11 @@ several motivations for controlling where a build pod is scheduled:
 - Prevent use of build pod scheduling fields. This is best left to an admission controller like
   [OPA Gatekeeper](https://www.openpolicyagent.org/docs/latest/kubernetes-introduction/) or
   [Kyverno](https://kyverno.io/).
+- Allow build pods to set node affinity/anti-affinity rules. Affinity/anti-affinity is an
+  incredibly rich and complex API (see [docs](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity)
+  for more information). We should strive to provide a simpler interface that is tailored
+  specifically to builds. For the sake of keeping the scope of this SHIP narrow, this feature is
+  being dropped. Build affinity rules can/should be addressed in a follow up feature.
 
 ## Proposal
 
@@ -121,11 +125,6 @@ optimized for builds so that builds are more likely to succeed
 
 As a developer, I want to select the OS and architecture of my build's node so that I can run
 builds on worker nodes with multiple architectures.
-
-#### Pod affinity - platform engineer/admin
-
-As a platform engineer/cluster admin, I want to set anti-affinity rules for build pods so that
-running builds are not scheduled/clustered on the same node.
 
 #### Taint toleration - cluster admin
 
