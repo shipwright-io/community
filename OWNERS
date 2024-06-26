@@ -6,7 +6,6 @@ approvers:
 - SaschaSchwarze0
 
 reviewers:
-- otaviof
 - qu1queee
 - SaschaSchwarze0
 - adambkaplan
@@ -19,3 +18,4 @@ emeritus_reviewers:
 - sbose78
 - gabemontero
 - ImJasonH
+- otaviof # 2024-05-24
