@@ -27,6 +27,10 @@ Documentation is spread across the code repositories, and is consolidated in the
 Enhancements to Shipwright are discussed through the Shipwright Improvement Proposal (SHIP) process.
 If you have an idea that you want to submit to Shipwright, please read the proposal process [guidelines](/ships/README.md).
 
+## Roadmap
+
+Want to know what we are working on? Start by taking a look at the project [roadmap](/ROADMAP.md).
+
 ## Icons and logos
 
 Graphic assets for the project, such as official logos, are located under the `assets` directory.
