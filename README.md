@@ -22,6 +22,11 @@ Documentation is spread across the code repositories, and is consolidated in the
   * Weekly Community Update - every Monday, 9AM Eastern Time
   * Bi-weekly Backlog Refinement - every other Thursday, 10AM Eastern Time
 
+### External Integrations
+
+Do you want to automatically track what Shipwright is working on? Email the
+[Shipwright Admins](mailto:shipwright-admins@lists.cncf.io) to request access to Shipwright's webhook feed.
+
 ## SHIPs
 
 Enhancements to Shipwright are discussed through the Shipwright Improvement Proposal (SHIP) process.
