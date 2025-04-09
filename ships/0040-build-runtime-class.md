@@ -36,6 +36,7 @@ superseded-by: []
 ## Open Questions [optional]
 
 - Should user namespaces also be in scope for this feature?
+  _No, this should be considered separately. Feature is beta as of k8s v1.30_.
 
 ## Summary
 
@@ -56,7 +57,7 @@ hardware virtualization to the existing mechanisms for isolating containers.
 
 - Automatic mechanisms for selecting the container runtime.
 - Network isolated builds.
-- Isolation with Kubernetes [user namespaces](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/). _Should this be a goal as well?_
+- Isolation with Kubernetes [user namespaces](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/).
 
 ## Proposal
 
@@ -134,10 +135,11 @@ such as node selectors and tolerations. As of Kubernetes 1.32, this is a "beta" 
 on most Kubernetes distributions by default. These scheduler options are merged on pod admission;
 there is a risk that pods are rejected and builds fail due to colliding pod scheduler values.
 
-The reconcile loop for `BuildRun` could in theory catch this situation ahead of time and fail the
-build prior to pod creation. We could also test this scenario and see how Tekton `TaskRuns` behave;
-if the `TaskRun` fails with a reasonable error message, then Shipwright `BuildRun`s can simply echo
-the information in their status.
+In theory the controller for `BuildRuns` can anticipate this situation and fail the build quickly.
+However, other Kubernetes controllers do not appear to do this, and thus it may not be worthwhile
+to add this extra logic. Checking the `RuntimeClass` for every build also adds overhead to each
+reconcile loop, either by making kubernetes apiserver calls directly or adding an informer-based
+cache for `RuntimeClass` that provides little value.
 
 ## Drawbacks
 
@@ -147,7 +149,13 @@ Similar drawbacks also exist with respect to cluster admin control over pod sche
 
 ## Alternatives
 
-TBD
+### Kubernetes User Namespaces
+
+An initial draft of this proposal included Kubernetes
+[user namespaces](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/) as part of
+the scope. This was removed because user namespaces are a beta feature in Kubernetes (as of v1.32),
+and did not reach the beta milestone until v1.30. Even with achievement of the beta milestone, the
+feature is still disabled by default in Kubernetes v1.32, making it challenging to test.
 
 ## Infrastructure Needed [optional]
 
