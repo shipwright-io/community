@@ -61,7 +61,7 @@ for containers that can be run on multiple CPU and operating system architecture
 equivalent to the Docker v2 “manifest list,” and the two terms are used interchangeably. For
 consistency in this proposal, “image index” will be used moving forward.
 
-#### Multi-arch Worker Nodes
+#### Multi-Arch Worker Nodes
 
 Many Kubernetes distributions - starting with v1.30 and perhaps earlier - allow clusters to have
 worker nodes with different OS and CPU architectures. Clusters expose the node OS and CPU
@@ -86,6 +86,21 @@ Support for generating an OCI image index varies by tool. Some - like ko and bui
 support for creating image indexes. These typically require the build to run in the same process;
 “fan out” support to run these builds in parallel is typically not supported or is more challenging
 to set up in a containerized environment (ex: `podman farm` command).
+
+#### Multi-Arch Builds with Kata Peer Pods
+
+Kata Containers and Confidential Containers support a deployment known as
+["peer pods"](https://confidentialcontainers.org/docs/architecture/design-overview/#clouds-and-nesting),
+where a remote virtual machine can be provisioned and managed in Kubernetes just like a pod. This
+can _hypothetically_ be used to securely run builds on machines with different CPU architectures.
+On Kubernetes, Kata peer pods are scheduled by specifying a [runtime class](https://kubernetes.io/docs/concepts/containers/runtime-class/)
+for the pod.
+
+The Konflux CI project has experimented with this approach for multi-arch container builds, with
+[mixed results](https://groups.google.com/g/konflux/c/A0m0JWjYwnc/m/mUOSFkAsAwAJ?utm_medium=email&utm_source=footer).
+The proof of concept proved that Tekton can schedule these build pods just fine. Current challenges
+relate to the provisioning and management of these virtual machines, which is out of scope for
+Shipwright.
 
 ### Goals
 
@@ -399,6 +414,8 @@ Existing test infrastructure can be used to verify a combination of "native" bui
 nodes and emulated builds using an injected build parameter. The community _may_ adopt a convention
 for injecting the "platform" value across the sample build strategies that support cross-
 compilation or CPU emulation (ko, buildah, buildkit, and perhaps others.).
+
+End to end testing for `runtimeClass` may prove challenging (see [SHIP-0040](https://github.com/shipwright-io/community/pull/263)).
 
 Unit and integration tests will likewise need to be extended to ensure the generated `PipelineRun`
 for multi-arch builds works as expected, and that existing `TaskRuns` for typical builds do not
