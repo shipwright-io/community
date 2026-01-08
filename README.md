@@ -16,6 +16,7 @@ Documentation is spread across the code repositories, and is consolidated in the
 ## How can I get involved?
 
 * Review our [Contributing Guide](https://github.com/shipwright-io/.github/blob/main/CONTRIBUTING.md).
+* Read our [Contributor Ladder](./CONTRIBUTOR-LADDER.md) to understand roles and growth paths.
 * Join our mailing lists for [users](https://lists.cncf.io/g/shipwright-users/join) or [contributors](https://lists.cncf.io/g/shipwright-dev/join)
 * Talk with us on the Kubernetes Slack - [#shipwright](https://kubernetes.slack.com/messages/shipwright) channel
 * Attend one of our community meetings - see our [public calendar](https://zoom-lfx.platform.linuxfoundation.org/meetings/shipwright) for up to date information.
