@@ -53,8 +53,7 @@ Typical contributions include (non-exhaustive):
 - Ability to apply the `lgtm` label to pull requests, making code contributions a candidate for
   merging.
 - Eligibilty to be added as a `reviewer` in a repository `OWNERS` file, communicating their
-  interest in a specific subject area. Reviewers are granted `Write` permission to their respective
-  repositories.
+  interest in a specific subject area.
 - Eligibility for nomination to Approver on specific subject areas.
 
 ### Becoming a Contributor
@@ -87,10 +86,8 @@ code changes in their scope.
 - Approval permissions on repositories for their subject areas, enforced via repository
   permissions and `OWNERS` files.
 - `Write` permission for all Shipwright repositories.
-- `Maintain` permission for projects in their area of expertise.
 - Abilty to manage GitHub action workflows, including release workflows.
-- Ability to approve code changes in scoped areas (subject to branch protections and repository
-  settings).
+- Listed as `Approvers` in the Shipwright [Maintainers List].
 - Influence on technical direction within their scope.
 
 ### Becoming an Approver
@@ -98,14 +95,14 @@ code changes in their scope.
 - Demonstrate sustained, high-quality contributions and reviews within a subject area. Contribuor
   scores from [LFX Insights] may be considered, however there is no minimum score required to
   become an Approver.
-- Be nominated by a Maintainer or Approver based on proficiency and responsiveness.
+- Be nominated by a `Maintainer` or `Approver` based on proficiency and responsiveness.
 - Gain approval by Maintainers via lazy consensus or vote according to [Governance].
 - Be added to relevant `OWNERS` files and granted necessary repository permissions.
 
 ## Maintainers
 
-Maintainers have administrative rights for one or more subject areas and are responsible for the
-overall health and direction of the project.
+Maintainers have administrative rights for all of Shipwright and are responsible for the overall
+health and direction of the project.
 
 ### Expectations
 
@@ -115,12 +112,11 @@ overall health and direction of the project.
 - Manage repository settings, CI, labels, and release processes as needed.
 - Ensure inclusive, respectful collaboration and enforce the [Code of Conduct].
 - Triage escalations and make decisions when consensus cannot be reached.
-- Sponsor and mentor Contributors and Approvers.
+- Sponsor and mentor `Contributors` and `Approvers`.
 
 ### Privileges
 
-- `Admin` permission for projects in their area of expertise.
-- Administrative rights for their subject areas (e.g., protection rules, labels, CI, releases).
+- `Admin` permission for all Shipwright repositories.
 - Ability to nominate and approve new Approvers and Maintainers per [Governance].
 - Approval permission for [SHIP Proposals].
 - Entry in the top-level [Maintainers List], granting them access to CNCF maintainer resources.
@@ -128,7 +124,7 @@ overall health and direction of the project.
 
 ### Becoming a Maintainer
 
-- Demonstrate a successful track record as an Approver across one or more subject areas.
+- Demonstrate a successful track record as an `Approver` across one or more subject areas.
 - Show leadership, reliability, and judgment in technical and community matters.
 - Be nominated and approved by existing Maintainers as defined in [Governance].
 
@@ -159,14 +155,12 @@ permissions as follows:
 | --- | --- | --- |
 | Participant | Read | Organization |
 | Contributor | Triage | Organization |
-| Contributor | Write | Repository |
 | Approver | Write | Organization |
-| Approver | Maintain | Repository |
-| Maintainer | Admin | Repository |
+| Maintainer | Admin | Organization |
 
-Note: Some Approvers may require `Admin` permission for specific tasks (e.g. security, repository
-settings). Admin access is granted sparingly and at the discretion of the project's respective
-Maintainers.
+Note: Some Approvers may require `Maintain` or `Admin` permission for specific tasks (e.g. security,
+repository settings). Admin access is granted sparingly and at the discretion of the project's
+respective Maintainers.
 
 ## Related Documents
 
