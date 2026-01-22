@@ -1,0 +1,39 @@
+name: Weekly Team Sync
+on:
+  schedule:
+    - cron: 00 17 * * 1
+    
+jobs:
+  create_issue:
+    name: Create team sync issue
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Today's Date
+        run: echo "TODAY=$(date '+%B %d, %Y')" >> $GITHUB_ENV
+      - name: Create team sync issue
+        uses: imjohnbo/issue-bot@v3
+        
+        with:
+          assignees: ""
+          labels: "community, meeting"
+          
+          title: "${{env.TODAY}} Community Meeting"
+          
+          body: |
+            ### Agenda
+
+            - [ ] Check-ins
+            - [ ] Discussion points
+            - Please add a topic in this thread and add a link to the GitHub issue associated with the topic.
+            - Please make sure you give folks enough time to review/discuss the topic offline on GitHub before coming into the meeting
+            - (optional) Paste the image of an animal 😸
+                    
+            ### Discussion Points
+            Add things to discuss below
+            
+          pinned: true
+          close-previous: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
