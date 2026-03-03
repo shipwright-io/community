@@ -15,8 +15,8 @@ approvers:
   - "@qu1queee"
   - "@SaschaSchwarze0"
 creation-date: 2025-03-25
-last-updated: 2025-03-25
-status: provisional
+last-updated: 2026-03-03
+status: implemented
 see-also:
   - "/ships/0039-build-scheduler-opts.md"  
 replaces: []
@@ -27,11 +27,11 @@ superseded-by: []
 
 ## Release Signoff Checklist
 
-- [ ] Enhancement is `implementable`
-- [ ] Design details are appropriately documented from clear requirements
-- [ ] Test plan is defined
+- [x] Enhancement is `implementable`
+- [x] Design details are appropriately documented from clear requirements
+- [x] Test plan is defined
 - [ ] Graduation criteria for dev preview, tech preview, GA
-- [ ] User-facing documentation is created in [docs](/docs/)
+- [x] User-facing documentation is created in [docs](/docs/)
 
 ## Open Questions [optional]
 
@@ -165,3 +165,5 @@ No additional infrastructure anticipated.
 ## Implementation History
 
 - 2025-03-25: Created as `provisional`
+- 2025-12-25: Approved by lazy consensus (implied `implementable`)
+- 2026-03-03: Implemented, released with v0.19.0
