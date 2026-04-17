@@ -13,7 +13,7 @@ reviewers:
 approvers:
   - TBD
 creation-date: 2025-05-21
-last-updated: 2025-08-19
+last-updated: 2026-04-17
 status: implementable
 see-also:
   - "ships/0039-build-scheduler-opts.md"
@@ -131,12 +131,9 @@ arch variant, os.version).
 A shorter single-string format for “platform” is not allowed within the Kubernetes YAML. However,
 it can be supported when invoked from the command line (see below).
 
-#### Multi-arch in `Build` and `BuildRun` objects
+#### Platforms in `Build` and `BuildRun` objects
 
-The `Build` and `BuildRun` APIs will add a new `multiArch` JSON/YAML object to `spec.output`. This
-object will contain the following fields:
-
-- `platforms`: list platforms to build, using the above "image platform" structure. Required.
+The `Build` and `BuildRun` APIs will add a new optional `platforms` property to `spec.output`. It is defined as an array of the above defined platform object.
 
 Below is an example multi-arch Linux image build for x86, ARM, Power, and Z:
 
@@ -147,25 +144,24 @@ spec:
   ...
   output:
     image: <url>
-    multiArch:
-      platforms:
-        - arch: amd64
-          os: linux
-        - arch: s390x
-          os: linux
-        - arch: arm64
-          os: linux
-        - arch: ppcle64
-          os: linux
+    platforms:
+      - arch: amd64
+        os: linux
+      - arch: s390x
+        os: linux
+      - arch: arm64
+        os: linux
+      - arch: ppcle64
+        os: linux
 ```
 
 #### `BuildRun` Controller Reconciliation
 
 ##### Validations
 
-The following validations should be run if `spec.output.mutliArch.platforms` is not empty.
+The following validations should be run if `spec.output.platforms` is not empty.
 
-For each image platform referened in the `platforms` array, the `BuildRun` controller should
+For each image platform referenced in the `platforms` array, the `BuildRun` controller should
 verify that at least one node with the respective `kubernetes.io/os` and `kubernetes.io/arch` label
 value is present. If no such node exists, the controller should set the `BuildRun`'s status to
 failed with an appropriate message and reason code.
@@ -209,7 +205,7 @@ the image registry has already been completed.
 **Phase 2: Fan Out Builds**
 
 The generated `PipelineRun` will then define a set of Tekton `TaskRuns` that can be run in parallel
-- one for each platform in `spec.output.multiArch.platforms`. Each `TaskRun` will set the appropriate
+- one for each platform in `spec.output.platforms`. Each `TaskRun` will set the appropriate
 `nodeSelector` to schedule the build on a node with the appropriate `kubernetes.io/os` and
 `kubernetes.io/arch` label.
 
@@ -235,7 +231,7 @@ failed.
 #### CLI Enhancements
 
 The CLI will add the `--platform` flag to the Build and BuildRun oriented commands. These shall set
-the respective value for `spec.output.multiArch`. The `--platform` option can be set multiple
+the respective value for `spec.output.platforms`. The `--platform` option can be set multiple
 times, and will accept platforms in their single-line `<os>/<arch>` format.
 
 Example experience:
@@ -268,8 +264,7 @@ N/A
 
 #### Upgrade Strategy [if necessary]
 
-The new multiArch field in `Build` and `BuildRun` objects will be optional (fields within it will
-be required). Current builds should work as expected.
+The new `platforms` field in `Build` and `BuildRun` objects will be optional. Current builds should work as expected.
 
 ### Risks and Mitigations
 
@@ -372,3 +367,4 @@ End to end testing may require a Kubernetes cluster with multiple CPU architectu
 
 - 2025-05-21: Initial Draft
 - 2025-08-19: Revised draft with narrower scope
+- 2026-04-17: Removed `multiArch` object to place `platforms` directly inside `output`
