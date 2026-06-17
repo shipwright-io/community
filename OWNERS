@@ -1,17 +1,16 @@
 # The OWNERS file lists individuals who are allowed to approve pull requests by prow
 
 approvers:
-- adambkaplan
 - qu1queee
 - SaschaSchwarze0
 
 reviewers:
 - qu1queee
 - SaschaSchwarze0
-- adambkaplan
 - HeavyWombat
 
 emeritus_approvers:
+- adambkaplan # 2026-06-17
 - sbose78
 
 emeritus_reviewers:

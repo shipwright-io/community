@@ -5,7 +5,6 @@ The current Maintainers Group for the Shipwright Project consists of:
 | Name              | Employer | GitHub ID                                             | Responsibilities           |
 | ----------------- | -------- | ----------------------------------------------------- | -------------------------- |
 | Sascha Schwarze   | IBM      | [SaschaSchwarze0](https://github.com/SaschaSchwarze0) | Administrator, Maintainer  |
-| Adam Kaplan       | Red Hat   | [adambkaplan](https://github.com/adambkaplan)        | Administrator, Maintainer  |
 | Enrique Encalada  | IBM      | [qu1queee](https://github.com/qu1queee)               | Administrator, Maintainer  |
 | Hasan Awad | Red Hat | [@hasanawad94](https://github.com/hasanawad94) | Administrator, Maintainer |
 
@@ -26,3 +25,13 @@ The current Approvers Group for the Shipwright Project consists of:
 
 Community members are eligible to graduate to the Maintainer and Approver groups in accordance with the project
 [Governance](./GOVERNANCE.md) and [Contributor Ladder](./CONTRIBUTOR-LADDER.md).
+
+# Emeritus Maintainers
+
+The following individuals have stepped down from active maintainer responsibilities but are recognized for their prior contributions to the project:
+
+| Name          | GitHub ID                                             | Former Responsibilities   |
+| ------------- | ----------------------------------------------------- | ------------------------- |
+| Adam Kaplan   | [adambkaplan](https://github.com/adambkaplan)         | Administrator, Maintainer |
+| Shoubhik Bose | [sbose78](https://github.com/sbose78)                 | Founder, Maintainer       |
+| Jason Hall    | [ImJasonH](https://github.com/ImJasonH)               | Founder, Maintainer       |
