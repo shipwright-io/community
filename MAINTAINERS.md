@@ -6,7 +6,6 @@ The current Maintainers Group for the Shipwright Project consists of:
 | ----------------- | -------- | ----------------------------------------------------- | -------------------------- |
 | Sascha Schwarze   | IBM      | [SaschaSchwarze0](https://github.com/SaschaSchwarze0) | Administrator, Maintainer  |
 | Enrique Encalada  | IBM      | [qu1queee](https://github.com/qu1queee)               | Administrator, Maintainer  |
-| Hasan Awad | Red Hat | [@hasanawad94](https://github.com/hasanawad94) | Administrator, Maintainer |
 
 This list must be kept in sync with the [CNCF Project Maintainers list](https://github.com/cncf/foundation/blob/master/project-maintainers.csv).
 
@@ -33,5 +32,7 @@ The following individuals have stepped down from active maintainer responsibilit
 | Name          | GitHub ID                                             | Former Responsibilities   |
 | ------------- | ----------------------------------------------------- | ------------------------- |
 | Adam Kaplan   | [adambkaplan](https://github.com/adambkaplan)         | Administrator, Maintainer |
-| Shoubhik Bose | [sbose78](https://github.com/sbose78)                 | Founder, Maintainer       |
+| Hasan Awad    | [hasanawad94](https://github.com/hasanawad94)         | Maintainer                |
 | Jason Hall    | [ImJasonH](https://github.com/ImJasonH)               | Founder, Maintainer       |
+| Jordan        | [zhangtbj](https://github.com/zhangtbj)               | Founder, Maintainer       |
+| Shoubhik Bose | [sbose78](https://github.com/sbose78)                 | Founder, Maintainer       |
