@@ -16,9 +16,9 @@ The current Approvers Group for the Shipwright Project consists of:
 | Name              | Employer | GitHub ID                                             |
 | ----------------- | -------- | ----------------------------------------------------- |
 | Apoorva Jagtap | SUSE | [@apoorvajagtap](https://github.com/apoorvajagtap) |
-| Ayush Satyam | Red Hat | [@ayushsatyam146](https://github.com/ayushsatyam146) |
 | Matthias Diester | IBM | [@HeavyWombat](https://github.com/HeavyWombat) |
 | Sayan Biswas | Red Hat | [@sayan-biswas](https://github.com/sayan-biswas) |
+| Irving Mondragon | | [@IrvingMg](https://github.com/IrvingMg) |
 
 # Contributor Ladder
 
